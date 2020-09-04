@@ -1,0 +1,108 @@
+---
+title: 'DATA605: Assignment 2'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+# Trace / Determinant / Factorization
+## Problem Set #1
+
+(1) Show that $A^T A \neq AA^T$ in general. (Proof and demonstration.)
+
+&nbsp;&nbsp;&nbsp;&nbsp;If matrix $A$ has dimentions $(m , n)$ and $A^T$ is $A$'s transpose, then the products $A^TA$ and $AA^T$ will have the dimensions $(n,n)$ and $(m,m)$ respectively. Therefore, if $m \neq n$ it follows that $A^T A \neq AA^T$  
+
+&nbsp;&nbsp;&nbsp;&nbsp;This is demonstrated here:
+
+```{r}
+#Generally, A^TA !=AA^T
+#Demonstration
+A <- matrix( c( 1,2,3,4,1,1,1,1,2,0,1,2 ), nrow=3 )
+print( A )
+print( t( A ) )
+```
+
+```{r error=TRUE}
+left_side = t( A ) %*% ( A )
+right_side = ( A ) %*% t( A )
+
+paste( 'size of AtA: ', dim( left_side )[1], 'x', dim( left_side )[2], '    size of AAt: ', dim( right_side )[1], 'x', dim( right_side )[2], sep="" )
+
+identical( dim( left_side ), dim( right_side ) )
+```
+
+
+(2) For a special type of square matrix A, we get $A^T A = AA^T$. Under what conditions could this be true? (Hint: The Identity matrix I is an example of such a matrix).
+
+&nbsp;&nbsp;&nbsp;&nbsp;Square matices with symmetry across the diagonal are a special case where $A^T A = AA^T$ is true.
+
+```{r}
+#Conditions where A^TA == AA^T
+A = matrix( c( 1,2,3,2,1,2,3,2,1 ), nrow=3 )
+left_side = t( A ) %*% ( A )
+right_side = ( A ) %*% t( A )
+print( left_side )
+print( right_side )
+identical( left_side , right_side )
+```
+
+
+## Problem Set #2
+
+&nbsp;&nbsp;&nbsp;&nbsp;Matrix factorization is a very important problem. There are supercomputers built just to do matrix factorizations. Every second you are on an airplane, matrices are being
+factorized. Radars that track flights use a technique called Kalman filtering. At the heart
+of Kalman Filtering is a Matrix Factorization operation. Kalman Filters are solving linear
+systems of equations when they track your flight using radars.  
+&nbsp;&nbsp;&nbsp;&nbsp;Write an R function to factorize a square matrix A into LU or LDU, whichever you prefer. You don’t have to worry about permuting rows of A and you can assume that A is less than 5x5, if you need to hard-code any variables in your code.
+
+```{r}
+#R function to factorize a square matrix A into LU or LDU
+#Doolittle Algorithm for LU Decomposition as described: www.https://www.geeksforgeeks.org/doolittle-algorithm-lu-decomposition/
+
+doolittle_LUdecomp <- function( A, n ) {
+  #decompose square matrix A with (n x n) dimentions into lower and upper triagular factors
+  
+  #initialize lower and upper
+  lower = matrix( 0L, nrow = n, ncol = n )
+  upper = matrix( 0L, nrow = n, ncol = n )
+  
+  #LU decomposition
+  for (a in 1:n){
+    
+    #upper triagle
+    for (b in a:n){
+      #sum of L(a,c)*U(c,b)
+      sum <- 0
+      for (c in 1:a){
+        sum <- sum + ( lower[a,c] * upper[c,b] )
+      }
+      #eval U(a,b)
+      upper[a,b] <- A[a,b] - sum
+    }
+    #lower triangle
+    for (b in a:n){
+      if ( a ==b ){
+        lower[a,a] <- 1 #diagonal =1
+      } else {
+        #sum of L(b,c)*U(c,a)
+        sum <- 0
+        for (c in 1:a){
+          sum <- sum + ( lower[b,c] * upper[c,a] )
+        }
+        #eval L(b,a)
+        lower[b,a] <- ( A[b,a] - sum) / upper[a,a]
+      }
+    }
+    
+  }
+  return( list( 'U' = upper, 'L' = lower ) )
+}
+```
+
+```{r}
+A = matrix( c( 2,-4,-4,-1,6,-2,-2,3,8 ), nrow=3 )
+result <- doolittle_LUdecomp( A, dim( A )[1] )
+result
+```
+
