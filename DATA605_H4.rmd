@@ -1,0 +1,143 @@
+---
+title: "DATA605: Assignment 4"
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+# Inverse of a Matrix / Single Value Decomposition
+## Problem Set #1
+
+Given a 3 × 2 matrix A:
+$$A = \begin{bmatrix}
+1 & 2 & 3 \\
+-1 & 0 & 4
+\end{bmatrix}$$
+
+write code in R to compute $\mathbf{X} = \mathbf{AA^T}$ and $\mathbf{Y} = \mathbf{A^TA}$. Then, compute the eigenvalues
+and eigenvectors of $\mathbf{X}$ and $\mathbf{Y}$ using the built-in commands in R.
+
+```{r}
+A = matrix( c( 1,-1,2,0,3,4 ), nrow = 2, ncol = 3 )
+print( A )
+```
+```{r}
+X = A %*% t( A )
+Y = t( A ) %*% A
+print( X )
+print( Y )
+```
+<br>  
+Compute the eigenvalues and eigenvectors of X and Y using the built-in commans in R.  
+
+```{r}
+Xeig <- eigen( X )
+Yeig <- eigen( Y )
+print( 'eigenvalues of X:' )
+print( Xeig['values'] )
+print( 'eigenvalues of Y:' )
+print( Yeig['values'] )
+print( 'eigenvectors of X:' )
+print( Xeig['vectors'] )
+print( 'eigenvectors of Y:' )
+print( Yeig['vectors'] )
+```
+<br>
+Compute the left-singular, singular values, and right-singular vectors of A using the svd command:
+```{r}
+components = svd( A )
+print( 'singular values of A' )
+print( components['d'] )
+print( 'left singular vectors of A' )
+print( components['u'] )
+print( 'right singular vectors of A' )
+print( components['v'] )
+```
+<br>
+Examine the two sets of singular vectors and show that they are indeed eigenvectors of X and Y. In addition, the two non-zero eigenvalues (the 3rd value will be very close to zero, if not zero) of both X and Y are the same and are squares of the non-zero singular values of A:
+```{r}
+#will use the asrenal library's comparedf
+library( arsenal )
+#recast as dataframes and use comparedf
+#get the summary and assign to a variables
+cmp_Xu <- summary( comparedf( as.data.frame( Xeig['vectors'] ), as.data.frame( components['u'] ) ) )
+cmp_Yv <- summary( comparedf( as.data.frame( Yeig['vectors'] ), as.data.frame( components['v'] ) ) )
+#we are only interested in the differences between the values in the dataframes
+numdiffs_Xu <- n.diffs( cmp_Xu ) #determines how many differences were found between values
+numdiffs_Yv <- n.diffs( cmp_Yv )
+paste( 'Num differences between the eigenvectors of X and the left singular vectors of A: ', numdiffs_Xu)
+paste( 'Num differences between the eigenvectors of Y and the right singular vectors of A: ', numdiffs_Yv)
+#ref 1 for more info
+```
+<br>
+```{r}
+#comparing the eigenvalues of X, Y and the singular values of A
+numdigits <- 10
+test1 <- round( Xeig['values'][[1]][1], numdigits ) == round( Yeig['values'][[1]][1], numdigits )
+test2 <- round( Xeig['values'][[1]][2], numdigits ) == round( Yeig['values'][[1]][2], numdigits )
+
+#comparing X to the squares of A
+test3 <- round( Xeig['values'][[1]][1], numdigits ) == round( components['d'][[1]][1]^2, numdigits )
+test4 <- round( Xeig['values'][[1]][2], numdigits ) == round( components['d'][[1]][2]^2, numdigits )
+
+if ( test1 == TRUE & test2 == TRUE )
+  print( 'The 2 nonzero eigenvalues of X & Y are equal' )
+
+if ( test3 == TRUE & test4 == TRUE )
+  paste( 'The 2 eigenvalues of X are equal to the square of the singular values of A (it follows that this holds for the non zero eigenvalues of Y as well)' )
+```
+
+## Problem Set #2
+
+write a function to compute the inverse of a well-conditioned full-rank square matrix using co-factors.  
+
+The Inverse Matrix will be calculated with these steps (ref#2):  
+
+1. calculate the matrix of minors 
+2. find the matrix of cofactors
+3. find the adjugate
+4. multiply by 1/Determinant
+
+```{r}
+#functionalize finding the co-factor
+findCofactor = function( M ){
+  cofactor_M <- M
+  stopifnot( length( unique( dim( M ) ) )==1 ) #make sure M is square
+  sizeM <- dim( M )[1]
+  for(i in 1:sizeM ){
+    for( j in 1:sizeM ){
+      cofactor_M[i,j] <- ( det(M[-i,-j]) * (-1)^(i+j) ) 
+      #STEP1 the first term (det(M[-i,-j])) finds the matrix of minors
+      #STEP2 the second term ((-1)^(i+j)) alternates +/- for matrix of cofactors
+    }                                               
+  }
+  return( cofactor_M )
+}
+
+
+myinverse = function(M){
+  cofactor <- findCofactor( M )
+  T_cofactor <- t( cofactor ) #STEP3 take the transpose of the cofactor to find the adjugate (adjoint)
+  det_M <- det(M)
+  M_inverse <- T_cofactor/det_M #STEP4 multiply by 1/det to find the inverse
+  return( M_inverse )
+}
+```
+
+```{r}
+C <- matrix(c(1,5,5,3,3,1,7,5,4), nrow=3, ncol=3, byrow=TRUE)
+invC <- myinverse( C )
+print( C )
+print( invC )
+```
+```{r}
+#damage control
+damage_control <- C %*% invC
+print( round(damage_control, digits = 14 ) )
+```
+
+
+## References
+1. [The `comparedf` function](https://cran.r-project.org/web/packages/arsenal/vignettes/comparedf.html#extract-differences)
+2. [Inverse of a Matrix using Minors, Cofactors and Adjugate](https://www.mathsisfun.com/algebra/matrix-inverse-minors-cofactors-adjugate.html)
