@@ -1,0 +1,87 @@
+---
+title: 'DATA605: Assignment #5'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+Choose independently two numbers B and C at random from the interval [0, 1] with uniform density. Prove that B and C are proper probability distributions. Note that the point (B,C) is then chosen at random in the unit square.
+
+```{r}
+set.seed(123)
+B <- runif( 1 )
+C <- runif( 1 )
+paste( 'B = ', B )
+paste( 'C = ', C )
+```
+
+libraries used:
+```{r}
+#polyarea from the pracma library will be used to find the area of ROIs
+library( pracma )
+```
+
+
+Find the probability that:  
+**(a) B + C < 1/2**  
+consider the cases in the unit square where B = 0.5, C = 0 and where B = 0 and C = 0.5. A line connecting these two points divides the unit square such that the probability the B + C < 1/2 can be found as the shaded area below the line.
+```{r}
+plot(c(0, 2), c(0, 2), type= "n", xlab = "", ylab = "")
+rect(0, 0, 1, 1, density = 5, border = "red", lty =2)
+polygon( c( 0, 0, 0.5 ), c(0.5, 0, 0), col= 'red', border = 'red' )
+polyarea <- abs( polyarea( c( 0, 0, 0.5 ), c(0.5, 0, 0) ) )
+text( 0.5, 1.25, paste('Probability B + C < 1/2 = ', polyarea ) )
+```
+
+**(b) BC < 1/2**  
+consider the cases in the unit square where B = 0.5, C = 1 and where B = 1 and C = 0.5. A line connecting these two points divides the unit square such that the probability the BC < 1/2 can be found as the shaded area below the line.
+```{r}
+plot(c(0, 2), c(0, 2), type= "n", xlab = "", ylab = "")
+rect(0, 0, 1, 1, density = 5, border = "red", lty =2)
+polygon( c( 0, 0, 0.5, 1, 1, 0 ), c(0, 1, 1, 0.5, 0, 0 ), col= 'orange', border = 'orange' )
+polyarea <- abs( polyarea( c( 0, 0, 0.5, 1, 1, 0 ), c(0, 1, 1, 0.5, 0, 0 ) ) )
+text( 0.5, 1.25, paste('Probability BC < 1/2 = ', polyarea ) )
+```
+
+
+**(c) |B − C| < 1/2**  
+consider the cases in the unit square where B = 0.5, C = 0 and where B = 0 and C = 0.5 and the case where B = 1, C = 0.5 and B = 0.5, C = 1. lines connecting these two sets of points divide the unit square such that the probability the |B − C| < 1/2 can be found as the shaded area below and above each line respectively.
+```{r}
+plot(c(0, 2), c(0, 2), type= "n", xlab = "", ylab = "")
+rect(0, 0, 1, 1, density = 5, border = "red", lty =2)
+polygon( c( 0, 0, 0.5 ), c(0.5, 0, 0 ), col= 'yellow', border = 'yellow' )
+polygon( c( 1, 1, 0.5 ), c(0.5, 1, 1 ), col= 'yellow', border = 'yellow' )
+polyarea1 <- abs( polyarea( c( 0, 0, 0.5 ), c( 0.5, 0, 0 ) ) )
+polyarea2 <- abs( polyarea( c( 1, 1, 0.5 ), c( 0.5, 1, 1 ) ) )
+text( 0.5, 1.25, paste('Probability |B − C| < 1/2 = ', polyarea1 + polyarea2 ) )
+```
+
+
+**(d) max{B,C} < 1/2**
+
+to find the area of the unit square where $B < \frac{1}{2} \cap C < \frac{1}{2}$ we consider the area of the unit square that lies both below the line B = 0.5 and to the left of C = 0.5
+```{r}
+plot(c(0, 2), c(0, 2), type= "n", xlab = "", ylab = "")
+rect(0, 0, 1, 1, density = 5, border = "red", lty =2)
+polygon( c( 0, 0, 0.5, 0.5 ), c(0.5, 0, 0, 0.5 ), col= 'green', border = 'green' )
+lines( c( 0.5, 0.5), c( 0, 1 ) )
+lines( c( 0, 1), c( 0.5, 0.5 ) )
+polyarea <- abs( polyarea( c( 0, 0, 0.5, 0.5 ), c(0.5, 0, 0, 0.5 ) ) )
+text( 0.5, 1.25, paste('Probability max{B,C} < 1/2 = ', polyarea ) )
+```
+
+
+**(e) min{B,C} < 1/2**
+to find the area of the unit square where $B < \frac{1}{2} \cup C < \frac{1}{2}$ we consider the area of the unit square that lies below the line B = 0.5 or to the left of C = 0.5
+```{r}
+plot(c(0, 2), c(0, 2), type= "n", xlab = "", ylab = "")
+rect(0, 0, 1, 1, density = 5, border = "red", lty =2)
+polygon( c( 0, 0, 0.5, 0.5, 1, 1, 0 ), c(0, 1, 1, 0.5, 0.5, 0, 0 ), col= 'blue', border = 'blue' )
+lines( c( 0.5, 0.5), c( 0, 1 ) )
+lines( c( 0, 1), c( 0.5, 0.5 ) )
+polyarea <- abs( polyarea( c( 0, 0, 0.5, 0.5, 1, 1, 0 ), c(0, 1, 1, 0.5, 0.5, 0, 0 ) ) )
+text( 0.5, 1.25, paste('Probability min{B,C} < 1/2 = ',polyarea ) )
+```
+
