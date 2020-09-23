@@ -1,0 +1,24 @@
+---
+title: "Discussion Week 4"
+output: html_notebook
+---
+
+# Introduction to Probability Chapter 2 #5
+
+Suppose you are watching a radioactive source that emits particles at a rate described by the exponential density
+$$f(t)=\lambda e^{-\lambda t}$$
+where $\lambda= 1$, so that the probability $P(0, T )$ that a particle will appear in the next $T$ seconds is $P ([0, T ]) = \int _{0}^{T} \lambda e ^{−\lambda t} dt$. Find the probability that a
+particle (not necessarily the first) will appear:
+<br>
+(a) within the next second  
+$$P([0,1]) = \int _{0}^{1} \lambda e ^{−\lambda t} dt = \int _{0}^{1} 1 e ^{−1 t} dt = -e^{-t|_{0}^{1}} = -e^{-1}-(-e^{0}) = 1-\frac{1}{e}$$
+<br>
+(b) within the next 3 seconds
+$$P([0,3]) = \int _{0}^{3} \lambda e ^{−\lambda t} dt = \int _{0}^{3} 1 e ^{−1 t} dt = -e^{-t|_{0}^{3}} = -e^{-3}-(-e^{0}) = 1-\frac{1}{e^3}$$
+<br>
+(c) between 3 and 4 seconds from now
+$$P([3,4]) = \int _{3}^{4} \lambda e ^{−\lambda t} dt = \int _{3}^{4} 1 e ^{−1 t} dt = -e^{-t|_{3}^{4}} = -e^{-4}-(-e^{-3}) = \frac{1}{e^3} - \frac{1}{e^4}$$
+<br>
+(d) after 4 seconds from now
+$$P([4,\infty ]) = 1 - \int _{0}^{4} \lambda e ^{−\lambda t} dt = 1 - \int _{0}^{4} 1 e ^{−1 t} dt = 1 -e^{-t|_{0}^{4}} $$
+$$= 1 - ( -e^{-4}-(-e^{0}) ) = 1 - ( 1-\frac{1}{e^4} ) = \frac{1}{e^4}$$
