@@ -1,0 +1,249 @@
+---
+title: 'DATA605: Assignment #6'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+## (1)
+A box contains 54 red marbles, 9 white marbles, and 75 blue marbles. If a marble is randomly selected from the box, what is the probability that it is red or blue? Express your answer as a fraction or a decimal number rounded to four decimal places.
+
+```{r}
+total_marbles <- 54 + 9 + 75
+P_red <- round( 54/total_marbles, 4 )
+P_blue <- round( 75/total_marbles, 4 )
+P_red_or_blue <- P_red + P_blue
+res <- paste( 'Probability the marble is Red:', P_red, '\nProbability the marble is Blue:', P_blue, '\nProbability the marble is either Red or Blue:', P_red_or_blue )
+cat( res, sep='\n')
+```
+
+## (2)
+You are going to play mini golf. A ball machine that contains 19 green golf balls, 20 red golf balls, 24 blue golf balls, and 17 yellow golf balls, randomly gives you your ball. What is the probability that you end up with a red golf ball? Express your answer as a simplified fraction or a decimal rounded to four decimal places.
+
+```{r}
+total_balls <- 19 + 20 +24 + 17
+p_redball <- round( 20/total_balls, 4 )
+res <- paste( 'Probability the ball is Red:', p_redball )
+print( res )
+```
+
+## (3)
+A pizza delivery company classifies its customers by gender and location of residence. The research department has gathered data from a random sample of 1399 customers. The data is summarized in the table below
+
+| Gender and Residence of Customers                   |
+|:---------------------------------:|:-----:|:-------:|
+|                                   | Males | Females |
+|             Apartment             |   81  |   229   |
+|                Dorm               |  116  |    79   |
+|           With Parent(s)          |  215  |   252   |
+|     Sorority/Fraternity House     |  130  |    97   |
+|               Other               |  129  |    72   |
+
+
+```{r}
+total_customers <- 1399
+residence <- data.frame( housing = c( 'Apartment', 'Dorm', 'Parents', 'Greek','Other'),
+                        Males = c( 81, 116, 215, 130, 129 ), Females = c( 229, 79, 252, 97, 72 ))
+residence
+```
+What is the probability that a customer is not male or does not live with parents? Write your answer as a fraction or a decimal number rounded to four decimal places.
+```{r, message=FALSE}
+library( dplyr )
+notparents_df <- filter( residence, housing != 'Parents') %>% 
+  mutate( sum = rowSums(.[2:3]) )
+P_notparents <- round( sum( notparents_df$sum )/total_customers, 4 )
+female_and_parents <- filter( residence, housing == 'Parents' ) %>% select( Females )
+P_female_and_parents <- round( sum( female_and_parents$Females )/total_customers, 4 )
+P_notmale_or_notparents <- P_female_and_parents + P_notparents
+res <- paste( 'Probability the customer does not live with parent:', P_notparents, '\nProbability the customer is not male and lives with parents:', P_female_and_parents, '\nProbability the customer not male or does not live with parents:', P_notmale_or_notparents )
+cat( res, sep='\n')
+```
+
+
+## (4)
+
+Determine if the following events are independent.  
+Going to the gym. Losing weight.  
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+Answer: A) Dependent
+</div>
+
+## (5)
+A veggie wrap at City Subs is composed of 3 different vegetables and 3 different condiments wrapped up in a tortilla. If there are 8 vegetables, 7 condiments, and 3 types of tortilla available, how many different veggie wraps can be made?
+
+```{r}
+veggies <- 8
+conds <- 7
+torts <- 3
+#assuming replacement
+possible_wraps_replacement <- ncol( combn( veggies, 3)) *
+  ncol( combn( conds, 3 ) ) * ncol( combn( torts, 1 ) )
+paste( 'Possible City Sub veggie wraps:', possible_wraps_replacement )
+```
+
+## (6)
+Determine if the following events are independent.  
+Jeff runs out of gas on the way to work. Liz watches the evening news.  
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+Answer: B) Independent
+</div>
+
+## (7)
+The newly elected president needs to decide the remaining 8 spots available in the cabinet he/she is appointing. If there are 14 eligible candidates for these positions (where rank matters), how many different ways can the members of the cabinet be appointed?
+```{r, message=FALSE}
+num_candidates <- 14
+num_seats <- 8
+cabinet_combos <- factorial( num_candidates  )/factorial( num_candidates - num_seats )
+paste( 'There are', cabinet_combos, 'possible cabinet appointment combinations to fill 8 ranked spots from the 14 eligible candidates' )
+```
+
+## (8)
+A bag contains 9 red, 4 orange, and 9 green jellybeans. What is the probability of reaching into the bag and randomly withdrawing 4 jellybeans such that the number of red ones is 0, the number of orange ones is 1, and the number of green ones is 3? Write your answer as a fraction or a decimal number rounded to four decimal places.
+```{r, message=FALSE}
+library( stringr )
+library( gtools )
+
+numR <- 9
+numO <- 4
+numG <- 9
+#jellybeans <- c( rep( "r", numR ) , rep( 'o', numO ), rep( 'g', numG ) )
+jellybeans <- c( "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", 
+                 "o1", "o2", "o3", "o4", 
+                 "g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8", "g9" )
+jellybean_combos <- combinations( length( jellybeans ), 4, jellybeans, set = TRUE )
+combos_df = data.frame( jellybean_combos )
+total_jellybean_combos <- dim( combos_df )[1]
+filter_jellybean_combos <- mutate( combos_df, cat = paste( X1, X2, X3, X4 ) ) %>%
+  filter( str_count( cat, 'g' ) == 3 & str_count( cat, 'o' ) == 1 ) #%>% 
+  #filter( GGG == TRUE )#distinct( cat )
+matched_combos <- dim( filter_jellybean_combos )[1]
+P_matched_combo <- round( matched_combos / total_jellybean_combos, 4 ) 
+paste( 'The probability of drawing a combo of 3 green and 1 orange marbles is', P_matched_combo )
+```
+
+## (9)
+Evaluate the following expression.
+$$\frac{11!}{7!}$$
+```{r}
+answer <- factorial( 11 ) / factorial( 7 )
+answer
+```
+
+## (10)
+Describe the complement of the given event.  
+67% of subscribers to a fitness magazine are over the age of 34.   
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+The complement of a set are all the elements not in the set. Therefore, if 67% of subscribers are over the age of 34, then the complement are all the subscribers 34 or younger ( 33% ).
+</div>
+
+
+## (11)
+If you throw exactly three heads in four tosses of a coin you win \$97. If not, you pay me \$30.  
+
+* **Step 1.** Find the expected value of the proposition. Round your answer to two decimal places.
+
+```{r}
+num_possible_outcomes <- 2^4
+possible_outcomes <- data.frame( permutations( 2, 4, c('H','T'), repeats.allowed=TRUE ) )
+possible_outcomes %>% 
+  mutate( cat = paste( X1, X2, X3, X4 ) ) %>% 
+  mutate( number_Hs = str_count( cat, 'H' )) %>%
+  group_by( number_Hs ) %>%
+  tally()
+possible_outcomes
+```
+```{r}
+P_win <-  4/16 
+P_loss <- ( 1/16 ) + ( 4/16 ) + ( 6/16 ) + ( 1/16 )
+expected_values <- 97*P_win - 30*P_loss
+paste( 'The Expected Value of the Proposition:', expected_values )
+
+```
+
+
+* **Step 2.** If you played this game 559 times how much would you expect to win or lose? (Losses must be entered as negative.)
+```{r}
+paste( 'If the game is repeated 559 times, the outcome is expected to be:', 559*expected_values )
+```
+
+## (12)
+Flip a coin 9 times. If you get 4 tails or less, I will pay you \$23. Otherwise you pay me \$26.  
+
+* **Step 1.** Find the expected value of the proposition. Round your answer to two decimal places.
+
+```{r}
+num_possible_outcomes <- 2^9
+possible_outcomes <- data.frame( permutations( 2, 9, c('H','T'), repeats.allowed=TRUE ) )
+possible_outcomes %>% 
+  mutate( cat = paste( X1, X2, X3, X4, X5, X6, X7, X8, X9 ) ) %>% 
+  mutate( number_Ts = str_count( cat, 'T' )) %>%
+  group_by( number_Ts ) %>%
+  tally()
+```
+```{r}
+P_4orlessTs <- 1/num_possible_outcomes + 9/num_possible_outcomes + 36/num_possible_outcomes +
+  84/num_possible_outcomes + 126/num_possible_outcomes
+P_gt4 <- 1 - P_4orlessTs
+Expected_Value <- round( 23*P_4orlessTs - 26*P_gt4, 2 )
+paste( 'The expected value of the proposition:', Expected_Value )
+```
+
+* **Step 2.** If you played this game 994 times how much would you expect to win or lose? (Losses must be entered as
+negative.)
+```{r}
+paste( 'If the game is repeated 994 times, the outcome is expected to be:', 994*Expected_Value )
+```
+
+## (13)
+The sensitivity and specificity of the polygraph has been a subject of study and debate for years. A 2001 study of the use of polygraph for screening purposes suggested that the probability of detecting a liar was .59 (sensitivity) and that the probability of detecting a "truth teller" was .90 (specificity). We estimate that about 20% of individuals selected for the screening polygraph will lie.  
+
+```{r}
+P_liar <- 0.2
+P_truth <- 0.8
+P_liar_and_pos <- 0.59 * P_liar
+P_liar_and_neg <- P_liar - P_liar_and_pos
+P_truth_and_neg <- 0.9 * P_truth
+P_truth_and_pos <- P_truth - P_truth_and_neg
+P_pos <- P_liar_and_pos + P_truth_and_pos
+P_neg <- P_liar_and_neg + P_truth_and_neg
+```
+
+
+| Conditional Probability Table                                 |
+|:---------------------------------:|:-----:|:-------:|:-------:|
+|                                   | Liar  | Truth   |  Total  |
+|             Positive              |   `r P_liar_and_pos`  | `r P_truth_and_pos` | `r P_pos` |
+|             Negative              |  `r P_liar_and_neg` | `r P_truth_and_neg`| `r P_neg` |
+|              Total                |  `r P_liar`  | `r P_truth`   | 1   |
+
+
+* **(a)** What is the probability that an individual is actually a liar given that the polygraph detected him/her as such? (Show me the table or the formulaic solution or both.)
+
+```{r}
+P_liar_given_pos <- round( P_liar_and_pos / P_pos, 2 )
+paste( 'The P(liar|pos ) =', P_liar_given_pos )
+```
+
+* **(b)** What is the probability that an individual is actually a truth-teller given that the polygraph detected him/her as such? (Show me the table or the formulaic solution or both.)
+```{r}
+P_truth_given_neg <- round( P_truth_and_neg / P_neg, 2 )
+paste( 'The P(truth|neg ) =', P_truth_given_neg )
+```
+* **(c)** What is the probability that a randomly selected individual is either a liar or was identified as a liar by the polygraph? Be sure to write the probability statement.
+```{r}
+P_liar_OR_pos <- P_liar + P_pos - P_liar_and_pos
+paste( 'The probability of bing a liar or being falsely identified as such =', P_liar_OR_pos )
+```
+
