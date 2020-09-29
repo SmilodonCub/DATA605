@@ -1,0 +1,35 @@
+---
+title: 'DATA605: Assignment #6'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# Discussion Exercise Chapter 4 #29 page 164
+<br><br>
+A student is applying to Harvard and Dartmouth. He estimates that he has a probability of .5 of being accepted at Dartmouth and .3 of being accepted at Harvard. He further estimates the probability that he will be accepted by both is .2. What is the probability that he is accepted by Dartmouth if he is accepted by Harvard? Is the event “accepted at Harvard” independent of the
+event “accepted at Dartmouth”?
+
+|                         Conditional Probabilities                       |
+|---------------------------|----------------------|----------------------|
+|                           | H Accepted P(HA)=0.3 | H Rejected P(HR)=0.7 |
+| D Accepted P(DA)=0.5      | P(HA,DA)=0.2         | P(HR,DA)= P(DA)-P(HA,DA)= 0.5-0.2   |
+| D Rejected P(DR)=0.5      | P(HA,HR)= P(HA)-P(HA,DA)= 0.3-0.2  | P(HR,DR)=P(DR)-P(HA,DR)= 0.5-0.1    |
+
+|                 Conditional Probabilities....simplified                       |
+|---------------------------|----------------------|----------------------|
+|                           | H Accepted P(HA)=0.3 | H Rejected P(HR)=0.7 |
+| D Accepted P(DA)=0.5      |          0.2         |         0.3          |
+| D Rejected P(DR)=0.5      |          0.1         |         0.4          |
+
+
+The probability that the student is accepted by Dartmouth given that he was accepted to Harvard
+$$P(DA|HA)= P(DA \cap HA)/P(HA) = \frac{0.2}{0.3} = \frac{2}{3}$$
+
+The event 'accepted to Harvard' ($P(HA)$) is independent of the event 'accepted to Dartmouth' ($P(DA)$) if $P(DA \cap HA ) = P(DA)P(HA)$. However, for this set, 
+$$P(DA)P(HA) = 0.5\centerdot 0.3 = 0.15 \neq P(DA\cap HA) = 0.2$$
+Therefore, the events are not independent
+
+<br><br><br><br>
