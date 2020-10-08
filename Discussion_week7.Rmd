@@ -1,0 +1,58 @@
+---
+title: 'DATA605: Assignment #6'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# 6.1.6
+A die is rolled twice. Let X denote the sum of the two numbers that turn up, and Y the difference of the numbers (specifically, the number on the first roll minus the number on the second). Show that E(XY ) = E(X)E(Y ). Are X and Y independent?
+
+```{r,message=FALSE}
+library( dplyr )
+#make a dataframe to hold each possible roll
+die1 <- c( rep( 1,6 ), rep( 2,6 ), rep( 3,6 ), rep( 4,6 ), rep( 5,6 ), rep( 6,6 ))
+die2 <- c( rep( 1:6,6 ) )
+combo_df <- data.frame( 'roll1' = die1, 'roll2' = die2 )
+combo_df <- combo_df %>% mutate( X = roll1 + roll2, Y = abs(roll1 - roll2), XY = X*Y )
+head( combo_df )
+```
+find the mean of the columns...
+```{r}
+combo_means <- colMeans( combo_df )
+combo_means
+```
+Does mean( XY ) == mean(X)*mean(Y)?
+```{r}
+combo_means['XY'] == combo_means['X']*combo_means['Y']
+```
+This shows that, yes, E(XY ) = E(X)E(Y )
+
+The code below simulates this process and finds the values X, Y and XY
+```{r, message=FALSE}
+
+#simulate the double dice roll 'n' times
+n <- 10000
+roll1 <- sample(1:6, n, replace=TRUE)
+roll2 <- sample(1:6, n, replace=TRUE)
+#use dplyr methods
+die_df <- data.frame( 'roll1' = roll1, 'roll2' = roll2 )
+die_df <- die_df %>% mutate( X = roll1 + roll2, Y = abs(roll1 - roll2), XY = X*Y )
+head( die_df )
+```
+Now find the mean of the columns...
+```{r}
+diemeans <- colMeans( die_df )
+diemeans
+```
+
+Does mean( XY ) == mean(X)*mean(Y)?
+```{r}
+diemeans['XY']
+diemeans['X']*diemeans['Y']
+```
+...those simulated values look pretty close
+
+<br><br><br>

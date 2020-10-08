@@ -1,0 +1,84 @@
+---
+title: 'DATA605: Assignment #6'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# (1)
+
+Let $X_1, X_2, . . . , X_n$ be $n$ mutually independent random variables, each of
+which is uniformly distributed on the integers from 1 to $k$. Let $Y$ denote the
+minimum of the $X_i$’s. Find the distribution of $Y$.
+
+To find the distribution, start by evaluating the probability where the minimum value of the distributions is 1: 
+$$P(Y=1) = 1 - P(Y>1) = 1-\left( \frac{k-1}{k} \right)^n$$
+Next, evaluate $P(Y=2)$
+
+$$P(Y=2) = 1 - P(Y>2) -P(Y=1)$$
+substitute in the answer above:
+$$P(Y=2) = 1 - P(Y>2) - \left( 1-\left( \frac{k-1}{k} \right)^n \right)$$
+$P( Y>2 ) = \left( \frac{k-2}{k} \right)^n$, substituting this in to the previous result gives:
+$$P(Y=2) = 1 - \left( \frac{k-2}{k} \right)^n - \left( 1-\left( \frac{k-1}{k} \right)^n \right)$$
+This can be simplified to
+$$P(Y=2) = \frac{(k-2)^n-(k-1)^n}{k^n}$$
+This can be generalized as:
+$$P(Y=y) = \frac{(k-y)^n-(k-y-1)^n}{k^n}$$
+
+Now to functionalize this expression:
+```{r}
+Pofy <- function( k,y,n ) {
+   return ((k-(y-1))^n - (k-(y))^n)/k^n
+}
+```
+Evaluate an example where:
+```{r}
+n <- 20.0 #mutually independent random variables
+k <- 10.0 #max range of the uniform distribution
+```
+
+```{r, message=FALSE}
+Pvals <- c()
+for ( i in seq( 1,k,1 ) ){
+  val <- Pofy( k,i,n )
+  Pvals[i] <- val
+}
+
+library( ggplot2 )
+Xvals <- seq( 1,k,1 )
+data <- data.frame( Xvals, Pvals )
+ggplot( data, aes( x=Xvals, y=Pvals ) ) +
+  geom_line() +
+  ggtitle( 'Distribution of Minimums' )
+```
+
+
+
+# (2)
+
+Your organization owns a copier (future lawyers, etc.) or MRI (future doctors).
+This machine has a manufacturer’s expected lifetime of 10 years. This means
+that we expect one failure every ten years. (Include the probability statements
+and R Code for each part.).
+
+## (a)
+What is the probability that the machine will fail after 8 years?. Provide also the
+expected value and standard deviation. Model as a geometric. (Hint: the probability is
+equivalent to not failing during the first 8 years..)
+
+## (b)
+What is the probability that the machine will fail after 8 years?. Provide also the
+expected value and standard deviation. Model as an exponential. 
+
+## (c)
+What is the probability that the machine will fail after 8 years?. Provide also the
+expected value and standard deviation. Model as a binomial. (Hint: 0 success in 8
+years) 
+
+## (d)
+What is the probability that the machine will fail after 8 years?. Provide also the
+expected value and standard deviation. Model as a Poisson. 
+
+<br><br><br>
