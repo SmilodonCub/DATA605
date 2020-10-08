@@ -68,17 +68,83 @@ What is the probability that the machine will fail after 8 years?. Provide also 
 expected value and standard deviation. Model as a geometric. (Hint: the probability is
 equivalent to not failing during the first 8 years..)
 
+```{r}
+P_F <- 1/10 #probability of failing in a given year
+P_NF <- 1 - P_F #probability of not failing in a given year
+E_val <- 1 / P_F #expected value
+STD <- sqrt( P_NF / P_F^2 ) #standard deviation
+#probability that the machine will not fail for the first 8 years
+# P( no failures for 8 years ) = 1 - P( not failing )^8
+numY <- 8
+P_8yearsNF_geometic <- 1-( 1-P_NF^numY )
+#alternatively
+P_8yearsNF_geometic <- 1 - pgeom( numY-1, P_F )
+
+answer <- paste( 'Expected Value:', E_val,
+                 '\nStandard Deviation:', round( STD, 4 ),
+                 '\nProbability of no failures for 8 years:', round( P_8yearsNF_geometic, 4 ) )
+cat( answer, sep='\n' )
+```
+
+
 ## (b)
 What is the probability that the machine will fail after 8 years?. Provide also the
 expected value and standard deviation. Model as an exponential. 
+
+Exponential Distribution
+$$P(x;\lambda ) = \lambda e^{-\lambda x}$$
+```{r}
+E_val <- 1 / P_F #expected value
+STD <- sqrt( 1 / P_F^2 ) #standard deviation
+P_8yearsNF_exp <- pexp( numY, P_F, lower.tail = FALSE )
+
+answer <- paste( 'Expected Value:', E_val,
+                 '\nStandard Deviation:', round( STD, 4 ),
+                 '\nProbability of failure after 8 years (Exponential):', 
+                 round( P_8yearsNF_exp, 4 ) )
+cat( answer, sep='\n' )
+```
+
 
 ## (c)
 What is the probability that the machine will fail after 8 years?. Provide also the
 expected value and standard deviation. Model as a binomial. (Hint: 0 success in 8
 years) 
 
+Binomial Distribution
+$$\left( \begin{array}{c} n \\ k \end{array} \right) =
+\frac{n!}{(n-k)!k!}$$
+
+```{r}
+E_val <- numY*P_F #expected value
+STD <- sqrt( numY *P_F*P_NF ) #standard deviation
+k <- 0 #dbinom will use choose() to compute coefficients
+P_8yearsNF_binomial <- dbinom( k, numY, P_F )
+
+answer <- paste( 'Expected Value:', E_val,
+                 '\nStandard Deviation:', round( STD, 4 ),
+                 '\nProbability of failure after 8 years (Binomial):', 
+                 round( P_8yearsNF_binomial, 4 ) )
+cat( answer, sep='\n' )
+```
+
 ## (d)
 What is the probability that the machine will fail after 8 years?. Provide also the
 expected value and standard deviation. Model as a Poisson. 
+
+Poisson Distribution:
+$$P(x;\lambda)= \frac{e^{-\lambda } * \lambda ^x }{x!}$$
+```{r}
+lam <- P_F * numY
+E_val <- P_F * numY #expected value
+STD <- sqrt( P_F * numY ) #standard deviation
+P_8yearsNF_poisson <- ppois( 0, lam )
+
+answer <- paste( 'Expected Value:', E_val,
+                 '\nStandard Deviation:', round( STD, 4 ),
+                 '\nProbability of failure after 8 years (Exponential):', 
+                 round( P_8yearsNF_poisson, 4 ) )
+cat( answer, sep='\n' )
+```
 
 <br><br><br>
