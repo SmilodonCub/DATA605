@@ -1,0 +1,118 @@
+---
+title: 'DATA605: Assignment #8'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+## 7.2.11 
+A company buys 100 lightbulbs, each of which has an exponential lifetime of
+1000 hours. What is the expected time for the first of these bulbs to burn
+out?
+
+For this problem, we are interested in finding the expected value of hte distribution function that describes the minimum of N=100 exponential random variables. There is a great video on youtube by Marcus Emsermann that walks through the solution using [volcanic eruptions](https://www.youtube.com/watch?v=h6j6KQ7XWoU) as an example. 
+
+
+$$E(min) = \frac{\mu }{n}$$
+
+```{r}
+num_lights <- 100
+mu <- 1000 #exponential lifetime
+E_min = mu / num_lights
+paste( 'The Expected time for the first bulb to burn out is:', E_min )
+```
+
+
+## 7.2.14
+Assume that $X_1$ and $X_2$ are independent random variables, each having an
+exponential density with parameter $\lambda$. Show that $Z = X_1 − X_2$ has density
+$f_Z (z) = \frac{1}{2}\lambda e^ {−\lambda |z|}$.
+
+From  example 7.4 we have:  
+$$f_X(x)= f_Y(x) =  \left\{ \begin{array}{c} \lambda e^{-\lambda x}, & \mbox{if } x \geq 0, 
+\\ 0, & \mbox{otherwise};\end{array} \right. $$
+
+we can adapt the convolutional formula for the sum of two independent exponential random variables to write
+$$f_Z(z) = \int _{- \infty}^{+\infty} f_X(z-y)f_{-Y}(z-x)dx$$
+now we use the fact that $f_{-Y}(z-x) = f_Y(x-z)$ to rewrite the equation as
+$$f_Z(z) = \int _{- \infty}^{+\infty} f_X(z-y)f_{Y}(x-z)dx$$
+Now evaluate the case where $z\lt 0$
+$$= \int_{0}^{\infty } \lambda e^{-\lambda x} \lambda e^{-\lambda (x-z)} dx$$
+$$ = \lambda e^{\lambda z} \int_{0}^{\infty} \lambda e^{-2\lambda x} dx$$
+$$ = \lambda e^{\lambda z} \left( -\frac{1}{2} e^{-2\lambda x} \vert_0 ^{\infty}\right)
+= \frac{\lambda}{2}e^{\lambda z}$$
+
+Now to evaluate at $z \ge 0$ there is a shortcut because $Z$ and $-Z$ are symmetric, we can assume that $f_Z(z) = f_Z(-z)$
+$$\therefore f_Z(z) =  \left\{ \begin{array}{c} 
+\frac{\lambda}{2} e^{\lambda x}, & z \lt 0, 
+\\ \frac{\lambda}{2} e^{-\lambda x}, & z \geq 0;\end{array} \right. = \frac{\lambda}{2}e^{-\lambda |z|}$$
+
+This is explained further & with better detail in the MIT Open courseware video, [The Difference of Two Independent Exponential Random Variables](https://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-041sc-probabilistic-systems-analysis-and-applied-probability-fall-2013/unit-ii/lecture-11/the-difference-of-two-independent-exponential-random-variables/)  
+
+## 8.2.1
+Let $X$ be a continuous random variable with mean $\mu$ = 10 and variance
+$\sigma ^2$ = 100/3. Using Chebyshev’s Inequality, find an upper bound for the
+following probabilities.
+
+```{r}
+sigmasigma <- 100/3
+mu <- 10
+```
+
+The Chebyshev Inequality states $P(|X-\mu| \ge \in) \le \frac{\sigma^2}{\in^2}$
+
+### (a) 
+$$P (|X − 10| ≥ 2)$$
+```{r}
+posnum <- 2
+P_Xmin10_2 <- sigmasigma / posnum^2
+if (P_Xmin10_2 >= 1){
+  paste( 'The upper bound for the probability is: 1' )
+} else {
+  paste( 'The upper bound for the probability is:', round( P_Xmin10_2, 4 ) )
+}
+```
+
+
+### (b) 
+$$P (|X − 10| ≥ 5)$$
+```{r}
+posnum <- 5
+P_Xmin10_5 <- sigmasigma / posnum^2
+if (P_Xmin10_5 >= 1){
+  paste( 'The upper bound for the probability is: 1' )
+} else {
+  paste( 'The upper bound for the probability is:', round( P_Xmin10_5, 4 ) )
+}
+```
+
+
+### (c) 
+$$P (|X − 10| ≥ 9)$$
+```{r}
+posnum <- 9
+P_Xmin10_9 <- sigmasigma / posnum^2
+if (P_Xmin10_9 >= 1){
+  paste( 'The upper bound for the probability is: 1' )
+} else {
+  paste( 'The upper bound for the probability is:', round( P_Xmin10_9, 4 ) )
+}
+```
+
+
+### (d) 
+$$P (|X − 10| ≥ 20)$$
+```{r}
+posnum <- 20
+P_Xmin10_20 <- sigmasigma / posnum^2
+if (P_Xmin10_20 >= 1){
+  paste( 'The upper bound for the probability is: 1' )
+} else {
+  paste( 'The upper bound for the probability is:', round( P_Xmin10_20, 4 ) )
+}
+```
+
+
+<br><br><br>
