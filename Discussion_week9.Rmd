@@ -1,0 +1,28 @@
+---
+title: 'DATA605: Assignment #9'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 9.3.2
+Let ${X_k }$, $1 ≤ k ≤ n$, be a sequence of independent random variables, all with mean $\mu = 0$ and variance $\sigma^2 = 1$ , and let $S_n, S_n^*$ and $A_n$ be their sum, standardized sum, and average, respectively. Verify directly that $_n^∗ = \frac{S_n}{\sqrt{n}} = \sqrt{n}A_n$.
+
+Example 9.7 pg 366 shows us the $S_n^* = \frac{S_n-n\mu}{\sqrt{n}\sigma}$, so:
+$$S_n^* = \frac{S_n -n\mu}{\sqrt{n}} =  \frac{S_n -n*0}{\sqrt{n}} =  \frac{S_n}{\sqrt{n}}$$
+
+The Average, $A_n$ is given as the sum/n, or $\frac{S_n}{n}$
+
+Solve the previous result for $S_n = \sqrt{n}S_n^*$ and substitue in:
+$$A_n = \frac{\sqrt{n}S_n^*}{n} = \frac{\sqrt{n}S_n^*}{\sqrt{n}*\sqrt{n}} = \frac{S_n^*}{\sqrt{n}}$$
+Solving the result $A_n = \frac{S_n^*}{\sqrt{n}}$, it follows that ...
+
+$$S_n^* = \sqrt{n}A_n$$
+
+<br><br><br>
