@@ -1,0 +1,89 @@
+---
+title: 'DATA605: Assignment #9'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# Homework Week 9
+
+## 9.3.11
+The price of one share of stock in the Pilsdorff Beer Company (see Exercise 8.2.12) is given by $Y_n$ on the nth day of the year. Finn observes that the differences $X_n = Y_{n+1} − Y_n$ appear to be independent random variables with a common distribution having mean $\mu = 0$ and variance $\sigma^2 = \frac{1}{4}$. If $Y_1 = 100$, estimate the probability that $Y_365$ is
+
+```{r}
+mu <- 0
+sigma <- sqrt( 1/4 )
+y_1 <- 100
+```
+
+
+(a) ≥ 100.
+given the values above, find $P(\frac{Y_365-Y_1}{\sqrt{365-1}} \geq \frac{0}{\sqrt{364}})$
+```{r}
+y_365_gt <- 100
+P_gt_100 <- 1 - pnorm( q = (y_365_gt - y_1)/sqrt(364), 
+                       mean = mu, sd = sigma, 
+                       lower.tail = TRUE )
+paste( 'P =', P_gt_100 )
+```
+
+(b) ≥ 110.
+given the values above, find $P(\frac{Y_365-Y_1}{\sqrt{365-1}} \geq \frac{10}{\sqrt{364}})$
+```{r}
+y_365_gt <- 110
+P_gt_110 <- 1 - pnorm( q = (y_365_gt - y_1)/sqrt(364), 
+                       mean = mu, sd = sigma, 
+                       lower.tail = TRUE )
+paste( 'P =', P_gt_110 )
+```
+(c) ≥ 120.
+given the values above, find $P(\frac{Y_365-Y_1}{\sqrt{365-1}} \geq \frac{20}{\sqrt{364}})$
+```{r}
+y_365_gt <- 120
+P_gt_120 <- 1 - pnorm( q = (y_365_gt - y_1)/sqrt(364), 
+                       mean = mu, sd = sigma, 
+                       lower.tail = TRUE )
+paste( 'P =', P_gt_120 )
+```
+
+## 2. Calculate the expected value and variance of the binomial distribution using the moment
+generating function.  
+This video describes using the [MGF to find the expected value and variance for a binomial distribution](https://www.youtube.com/watch?v=Qkz6ZTZrphg)
+which I summarize below:  
+
+The Moment Generating function for an binomial random variable is given as:
+$$M(t) = ( (1-p) + pe^t)^n$$
+finding the first derivative (moment):
+$$M'(t) = n\mathfrak{L}^{n-1}(t)pe^t, \mbox{  where } \mathfrak{L} = (1-p + pe^t)  $$
+the expected value is found as:
+$$M'(0) = npe^0\mathfrak{L}^{n-1}(0) = np$$
+$$\therefore E(X) = M'(0) = np$$
+to calculate the variance, need to find the second derivative (moment):
+$$M''(t) = np(e^t(n-1)\mathfrak{L}^{n-2}\cdot pe^t + \mathfrak{L}^{n-1}e^t)$$
+now to evaluate...
+$$M''(0) = np( 1\cdot(n-1)\cdot1\cdot p + 1\cdot1) = n(n-1)p^2 + np$$
+the variance is calculated as follows:
+$$var( X ) = M''_X(0) - M'_X(0)^2 = n(n-1)p^2 + np - n^2p^2$$
+$$=n^2p^2 - np^2 +np - n^2p^2 = np(1-p)$$
+
+
+## 3. Calculate the expected value and variance of the exponential distribution using the moment
+generating function.
+[This video describes the calculation of the expected value ](https://www.youtube.com/watch?v=QUAecbMv0y0) which I summarize below:  
+
+The Moment Generating function for an exponential random variable is given as:
+$$M(t) = \frac{\lambda}{\lambda - t} \dashrightarrow \lambda(\lambda-t)^{-1}, \mbox{  given the condition: } t \lt \lambda$$
+where $\lambda =$ the rate parameter 
+
+finding the first derivative:
+$$M'(t) = -1 \cdot \lambda(\lambda-t)^{-2} \cdot -1 = \frac{ \lambda}{(\lambda-t)^2}$$
+The expected value is then found as:
+$$E(x) = M'(0) = \frac{\lambda}{(\lambda-0)^2} = \frac{\lambda}{\lambda^2} = \frac{1}{\lambda}$$
+To calculate the variance, find the second derivative:
+$$M''(t) = \frac{2\lambda}{(\lambda - t)^3} \vert_{t=0} = \frac{2}{\lambda^2}$$
+The variance is calculated as follows:
+$$var( X ) = M''_X(0) - M'_X(0)^2 = \frac{2}{\lambda^2} - \frac{1}{\lambda^2} = \frac{1}{\lambda^2}$$
+
+<br><br><br>
