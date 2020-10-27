@@ -1,0 +1,94 @@
+---
+title: 'DATA605: Assignment #10'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# DATA605 HW10
+
+## Smith is in jail and has 1 dollar; he can get out on bail if he has 8 dollars. A guard agrees to make a series of bets with him. If Smith bets a dollars, he wins a dollars with probability .4 and loses a dollars with probability .6. Find the probability that he wins 8 dollars before losing all of his money if:
+
+Represent Smith's 'get out of jail' money situation with a Markov Chain using the `markovchain` library:
+```{r, message=FALSE}
+library(markovchain) #loading the package
+```
+
+Define a transition matrix between states in the system. In other words, how Smith's money situation changes as he plays.
+```{r}
+jailbreak<-matrix(rep(0, 9^2),byrow=TRUE,nrow = 9)
+rownames(jailbreak)<-colnames(jailbreak)<-c("$0","$1","$2","$3","$4","$5","$6","$7","$8")
+#2 absorption states of the system
+jailbreak[1,1] = 1
+jailbreak[9,9] = 1
+#capture most of the behavior with this loop
+for (link in seq( 1,dim(jailbreak)[1]-1) ) {
+  jailbreak[ link,link + 1 ] = 0.6 #gain 1 
+  jailbreak[ link,link -1 ] = 0.4 #lose 1
+}
+jailbreak[2,1] = 0
+jailbreak[8,9] = 0
+jailbreak[9,8] = 0.4
+print( jailbreak)
+```
+
+```{r}
+jailMc<-as(jailbreak, "markovchain")
+plot(jailMc, curved=TRUE)
+```
+
+## (a) he bets 1 dollar each time (timid strategy).
+
+We need to find the probability that the 'chain' will propagate to the state '\$8' before reaching state '\$0', or:
+$$P( S_{8} \lt S_0 ) =  P( S_8 < S_0|X_0 = i)$$
+
+This can be found using the `absorptionProbabilities` method from the `markovchain` library. This method calculates the probability of reaching an absorption point in the markov chain from every possible state of the system. Absorption states are states that, once entered, cannot be left (e.g. reaching state '\$8' gets Smith out of jail)
+```{r}
+absp <- absorptionProbabilities(jailMc)
+print( absp )
+```
+The probability that the chain propagates to state '\$8' before '\$0' when starting from the state '\$3' is given by `r absp[ 2,3 ]`
+
+## (b) he bets, each time, as much as possible but not more than necessary to bring his fortune up to 8 dollars (bold strategy).
+
+This system behaves differently,so we need a new Markov Chain transition matric to describe propagation:
+```{r}
+jailbreak<-matrix(rep(0, 9^2),byrow=TRUE,nrow = 9)
+rownames(jailbreak)<-colnames(jailbreak)<-c("$0","$1","$2","$3","$4","$5","$6","$7","$8")
+#the absorption states
+jailbreak[1,1] = 1
+jailbreak[9,9] = 1
+#starting from 3 bets as much as possible to get to 8
+#starting from 3 either loses to zero or gains to 6
+jailbreak[1,4] = 0.6
+jailbreak[7,4] = 0.4
+#from 6 bets 2 more to 8 or loses 2 to 5
+jailbreak[5,7] = 0.6
+jailbreak[9,7] = 0.4
+#from 4 bets 4 to 8 or loses 4 to 0
+jailbreak[1,5] = 0.6
+jailbreak[9,5] = 0.4
+
+#these nodes do not get connected
+jailbreak[2,2] = 1
+jailbreak[3,3] = 1
+jailbreak[6,6] = 1
+jailbreak[8,8] = 1
+print( jailbreak)
+```
+
+```{r}
+jailMc<-as(jailbreak, "markovchain")
+plot(jailMc, curved=TRUE, vertex.size=15, vertex.label.cex=0.8, vertex.label.dist=0, edge.arrow.size=.5 )
+```
+
+```{r}
+absp2 <- absorptionProbabilities(jailMc)
+print( absp2 )
+```
+The probability that the chain propagates to state '\$8' before '\$0' when starting from the state '\$3' using the **Bold** strategy is given by `r absp2[ 2,3 ]`
+
+## (c) Which strategy gives Smith the better chance of getting out of jail?
+`r absp2[ 6,1 ]` $\gt$ `r absp[ 2,3 ]` evaluates `r absp2[ 6,1 ] > absp[ 2,3 ]`. Therefore, the **Bold** strategy works out better for Smith.
