@@ -1,0 +1,61 @@
+---
+title: 'DATA605: Discussion Week #10'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+# 11.2.14
+
+With the situation in Exercise 13 (the homework problem), consider the strategy such that for $i \lt 4$, Smith bets $min(i, 4 − i)$, and for $i \geq 4$, he bets according to the bold strategy, where $i$ is his current fortune. Find the probability that he gets out of jail using this strategy. How does this probability compare with that obtained for the bold strategy?
+
+Will visualize the system and find the solution using the library `markovchain`.
+```{r, message=FALSE}
+library(markovchain) #loading the package
+```
+
+Define a transition matrix between states in the system. In other words, how Smith's money situation changes as he plays.
+```{r}
+jailbreak<-matrix(rep(0, 9^2),byrow=TRUE,nrow = 9)
+rownames(jailbreak)<-colnames(jailbreak)<-c("$0","$1","$2","$3","$4","$5","$6","$7","$8")
+#2 absorption states of the system
+jailbreak[1,1] <- 1
+jailbreak[9,9] <- 1
+for (idx in seq( 2,dim(jailbreak)[1]-1) ) {
+  link <- idx-1
+  if (idx < 5 ){ #if the state is < 4
+    #smith will bet the min( currentstate, 4-currentstate )
+    jailbreak[ idx + min( link, 4-link ), idx] = 0.6 #gain 1
+    jailbreak[ idx - min( link, 4-link ), idx ] = 0.4 #lose 1
+  }
+  else{ #if state is >= 4
+    #smith will follow bold strategy and bet what he needs to get to '$8' state
+    jailbreak[ idx + ( 8 - link ),idx ] = 0.6 #gain 1
+    jailbreak[ idx - ( 8 - link ),idx ] = 0.4 #lose 1  
+  } 
+  
+}
+
+
+jailbreak[2,1] = 0
+jailbreak[8,9] = 0
+print( jailbreak)
+```
+
+
+```{r}
+jailMc<-as(jailbreak, "markovchain")
+plot(jailMc, curved=TRUE)
+```
+
+```{r}
+absp <- absorptionProbabilities(jailMc)
+print( absp )
+```
+
+Here is what Smith's chances looks like playing with this strategy:  
+$P( \mbox{Smith get's out of jail} ) =$ `r absp[2,1]`    
+$P( \mbox{Smith stays in jail} ) =$ `r absp[1,1]` 
+<br><br><br>
