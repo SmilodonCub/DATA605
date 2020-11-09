@@ -1,0 +1,128 @@
+---
+title: 'DATA605: Assignment #11'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Using the “cars” dataset in R, build a linear model for stopping distance as a function of speed and replicate the analysis of your textbook chapter 3 (visualization, quality evaluation of the model, and residual analysis.)
+
+## Housekeeping
+
+load the `r` libraries that will be used for this exercise:
+```{r, message = FALSE }
+library( tidyverse ) #tidyverse to model our data & other functions
+library( ggplot2 ) #basic plotting of our lin. model fit + data
+library( ggfortify ) #plot diagnostics of our lin. model
+library( broom )#model summary stats
+```
+
+
+## Exploring the dataset
+
+learn the basic shape and type of the data.
+```{r}
+glimpse( cars )
+summary( cars )
+```
+The `cars` dataframe consists of `r dim( cars )[1]` observations (rows) and `r dim( cars )[2]` features with the labels: `r colnames( cars )`
+
+## visualizations of the `cars` dataset
+
+visually inspect a scatterplot of the datapoints where distance is given on the y-axis and speed along the x-axis:
+```{r}
+#basic scatter plot
+ggplot( cars, aes( x = speed, y = dist ) ) +
+  geom_point() +
+  ggtitle( 'Scatter plot of `cars` data' ) +
+  ylab( 'distance' )
+```
+There is a positive trend in the datapoints for distance to increase as a function of speed. The relationship appears steady, therefore the plot above shows that the data might be suitable to be fit with a linear model.
+
+Next visualize the features of the data as box plots and look for symmetry of the distribution or for outliers:
+```{r}
+#basic box plot
+cars_long <- cars %>% 
+  pivot_longer( everything(), names_to = "class", values_to = "count")
+ggplot( cars_long, aes( x = class, y = count ) ) +
+  geom_boxplot(color="red", fill="orange", alpha=0.2) +
+  ggtitle( 'Box plot of `cars` data' )
+```
+there only appears to be one outlier for the distance data. the solid red lines within the box plots indicates the median of the data; that the lines are approximately in the center of the boxes indicates that the distribution is approximately normal. however, we can take another look at the distribution with a density plot:
+
+```{r}
+#plot the density of features
+ggplot(cars, aes(x=x) ) +
+  # Top
+  geom_density( aes(x = speed, y = ..density..), fill="#69b3a2" ) +
+  geom_label( aes(x=4.5, y=0.075, label="speed"), color="#69b3a2") +
+  # Bottom
+  geom_density( aes(x = dist, y = -..density..), fill= "#404080") +
+  geom_label( aes(x=4.5, y=-0.075, label="distance"), color="#404080") +
+  xlab("x") +
+  ggtitle( 'Density of cars features' )
+```
+The feature distributions have density plots mirrored in the figure above. the are no obxious signs of multiple modes in the data and the profiles are approximately normal.
+
+Next, calculate the correlation between the two features:
+```{r}
+#correlation
+cor( cars$speed, cars$dist )
+```
+There is a strong positive correlation between speed and distance. This suggests that much of the variance in the distance variable can be explained as a function of the speed variable.
+These preliminary inspections of the data suggest that a linear model might be appropriate here.  
+
+## Linear Regression
+Now to fit the linear model to the data:
+```{r}
+#fit a linear regression to the cars data to model distance by speed
+cars_lm <- lm( cars$dist ~ cars$speed )
+#display a summary of the data
+summary( cars_lm )
+```
+The summay of the linear model tells us that the `cars` data can be described by a linear model given by the equation:
+$$dist = -17.58 + 3.932 * speed$$
+
+Here, the scatterplot of the data is shown plotted with the linear mode approximation.
+```{r}
+cars_predict <- predict( cars_lm )
+ggplot( cars, aes( y= dist, x = speed ) ) +
+  geom_point() +
+  geom_line( aes( y = cars_predict )) +
+  ggtitle( 'Linear Model' ) +
+  ylab( 'distane' )
+```
+
+## Regression Diagnostics
+
+```{r}
+cars_sum <- glance( cars_lm )
+cars_sum
+```
+
+**Statistical Significance**: From the summary statistics for the linear regression, the p-value of the fit is `r round( cars_sum$p.value,3 )` which is very small (well under relatively strict criterion of 0.01). Therefore, we can safely reject the null hypothesis that there is no relationship between the two variables.
+
+**Test Linear Regression Assumptions**: the function `autoplot()` will generate a series of visualization that can help us test the assumptions we made about our data when performing the linear regression
+```{r, message=FALSE}
+autoplot( cars_lm ) + theme_minimal()
+```
+
+1. **detecting non-linearity with the Residuals vs Fitted plot**: the residuals data points are reasonably symmetry suggesting that the variance of the residuals does not change as a function of fitted value.
+2. **testing linear relation with the Normal Q-Q plot**: in plotting the data quartiles against each other, the results follow a line for all but the more extreme values. this supports a linear relationship.
+3. **testing variance with the Scale-Location plot**: similar to the residuals plot, this scales the residuals. the general magnitude of the scaled residuals doesn't hange much, so we can be assured that the variance of the fit is relatively even across the data distributions.
+4. **looking for outlier influence with the Residuals vs Leverage plot**: This plot is relatively straight indicating that there aren't any obvious outliers in the data that have too strong an influence over the linear regression fit.
+
+## Conclusion
+Taken together, the `cars` dataset is a good candidate for linear regression that yields a statistically significant fit described by the equation:
+$$dist = -17.58 + 3.932 * speed$$
+
+thank you for reading.
+
+
+<br><br><br>
