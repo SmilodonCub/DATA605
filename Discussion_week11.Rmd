@@ -1,0 +1,74 @@
+---
+title: 'Simple Linear Regression: Lego Data Set'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+![](https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQaheHwmxWTgTOs440eG__YIJl5D50iwu1hbA&usqp=CAU){width=150%}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The Lego Data Set
+&nbsp;&nbsp;&nbsp;&nbsp;The following code will walk through a simple linear regression fit with using `r` `tidyverse` methods and the [Lego Sets dataset from kaggle.com](https://www.kaggle.com/mterzolo/lego-sets?select=lego_sets.csv). This dataset holds data features for lego sets available through lego.com including the number of pieces in a set, listed sale price, suggested age and other information available as a downloadable .csv file. We will explore this dataset, but first to some housekeeping to set up our `r` environment.  
+&nbsp;&nbsp;&nbsp;&nbsp;Import the libraries we will utilize:
+
+```{r, message=FALSE}
+library( tidyverse ) #tidyverse to model our data & other functions
+library( ggplot2 ) #basic plotting of our lin. model fit + data
+library( ggfortify ) #plot diagnostics of our lin. model
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;Great!, now to load the `lego_sets.csv` as an `r` dataframe. To make out lives easier, the data has be uploaded to the author's github account and will be accessed via a url link to the raw data:
+```{r}
+lego_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/lego_sets.csv'
+lego_df <- read.csv( lego_url ) #read data in as an r dataframe
+paste( 'Lego dataset dimensions:' )
+dim( lego_df ) #print the dimensions of the dataset
+colnames( lego_df )#print the feature (column) names of the dataset
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;From the output above, we can see that there are 12,261 rows (entries) of data. Each row represents a lego set available on lego.com. There are 14 columns of data and the names have been printed above. From this we can begin to guess what the data might look like. For example, `list_price` is probably a column of floats giving the suggested sale price for a given lego set. We could use the `head()` function to view the first row several entries to the dataframe. However, instead we will use the `glimpse()` function. `glimpse()` will return a transposed version of the printed dataframe such that each row of the result will correspond to a column and will list as many entries that will fit along with the data type. This output is more consice and will give a more intuitive feel for the data than printing the frame of using `head()` would provide.
+
+```{r}
+glimpse( lego_df )
+lego_df[which.max(lego_df$list_price),]
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The `glimpse()` output is quite informative. We can get a good idea which features are categorical (e.g. country, ages, review_difficulty ) and which are numeric variables (e.g. price, piece_count, num_reviews etc.). To get more information about each features, we can also use the `summary()` method:
+
+```{r}
+summary( lego_df )
+```
+&nbsp;&nbsp;&nbsp;&nbsp;The output from `summary()` gives us a better understanding of the spread of numerical features.  
+
+&nbsp;&nbsp;&nbsp;&nbsp;We can now use what we have learned about the structure of the data to ask questions of our dataset. For example, how many Star Wars lego sets are there?:
+
+```{r}
+lego_starwars <- lego_df %>% filter( lego_df['theme_name'] == 'Star Wars™' )
+dim( lego_starwars )
+summary( lego_starwars[ 'list_price' ] )
+```
+&nbsp;&nbsp;&nbsp;&nbsp;OK. So there are 1377 Star Wars lego sets on the market. The average price (mean) is \$91.50, but the most expensive is \$1104.87!
+
+```{r}
+linregmod <- lm( list_price ~ piece_count, data = lego_df )
+summary( linregmod )
+modpredict <- predict( linregmod )
+```
+
+```{r}
+ggplot( lego_df, aes( y= list_price, x = piece_count ) ) +
+  geom_point() +
+  geom_line( aes( y = modpredict ))
+```
+
+
+```{r, message=FALSE}
+autoplot( linregmod, which = 1:6 ) + theme_minimal()
+```
+
+
+<br><br><br>
