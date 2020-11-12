@@ -1,0 +1,139 @@
+---
+title: 'Obesity Levels with Eating & Physical habits Dataset'
+subtitle: 'a regression analysis done in the tidyverse'
+author: 'by Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+![](https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcTKtb4fZqE4a-iJtQ_mvKSxgS0WRD70AKM1sA&usqp=CAU){width=150%}
+
+&nbsp;&nbsp;&nbsp;&nbsp;The following analysis explores the ["Estimation of obesity levels based on eating habits and physical condition Data Set"](https://archive.ics.uci.edu/ml/datasets/Estimation+of+obesity+levels+based+on+eating+habits+and+physical+condition+#), a dataset consisting of features that quantify the eating and physical habits of individuals as well as estimations of obesity and basic body metrics. The dataset is hosted on the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets.php) which is an excellent resource to find well curated datasets for testing analysis and modeling techniques.
+
+&nbsp;&nbsp;&nbsp;&nbsp;Before we get started, we will load the libraries into the `r` environment which will be used:
+```{r, message=FALSE}
+library( tidyverse ) #tidyverse to model our data & other functions
+library( ggplot2 ) #basic plotting of our lin. model fit + data
+library( ggfortify ) #plot diagnostics of our lin. model
+library( tidymodels )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;And now to load the data. The .csv file from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets.php) has been uploaded to the author's github account for use with the following code:
+```{r}
+obs_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/ObesityDataSet_raw_and_data_sinthetic.csv'
+obs_df <- read.csv( obs_url ) #read data in as an r dataframe
+paste( 'Obesity dataset dimensions:' )
+dim( obs_df ) #print the dimensions of the dataset
+colnames( obs_df )#print the feature (column) names of the dataset
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The resulting dataframe consists of `r dim( obs_df )[1]` observations, or rows of data and each row holds values for `r dim( obs_df )[2]` columns of feature attributes. The names of the columns are somewhat obscure. However, we can find a more complete description in a Data Article in [the Journal of Data in Brief](https://www.sciencedirect.com/science/article/pii/S2352340919306985?via%3Dihub) where the authors give a full documentation of the data curation and collection methods.  
+
+&nbsp;&nbsp;&nbsp;&nbsp;The following code will use `dplyr` methods to rename the columns with more intuitive labels, create a new column that maps the `obs_df$weight_category` values from strings to a numeric value, and we wil create yet another column that calculates the Body Mass Index, where:
+$$\mbox{Body Mass Index} = \frac{\mbox{Weight}}{\mbox{Height}^2}$$
+```{r}
+obs_df <- obs_df %>% rename( eats_high_calor_food = FAVC, eats_veggies = FCVC, 
+                             num_meals = NCP, eats_snacks = CAEC, drinks_water = CH2O, 
+                             counts_calories = SCC, exercises_often = FAF, 
+                             time_using_tech = TUE, drinks_alcohol = CALC, 
+                             method_trans = MTRANS, weight_category = NObeyesdad ) %>%
+  mutate( bmi = Weight / Height^2 ) %>%
+  mutate( weight_cat_num = case_when( ( weight_category == "Insufficient_Weight" ) ~ -1,
+          ( weight_category == "Normal_Weight" ) ~ 0,
+          ( weight_category == "Overweight_Level_I" ) ~ 1,
+          ( weight_category == "Overweight_Level_II" ) ~ 2,
+          ( weight_category == "Obesity_Type_I" ) ~ 3,
+          ( weight_category == "Obesity_Type_II" ) ~ 4,
+          ( weight_category == "Obesity_Type_III" ) ~ 5 ) )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;And now to take a glimpse at the dataframe with the `tidyverse` function `glimpse()`:
+```{r}
+glimpse( obs_df )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;There will be some modeling of this dataset in future code chuncks, so we will use `tidymodels` methods to split our data into training and testing sets.
+```{r}
+set.seed( 138 )
+obs_split <- initial_split( obs_df ) 
+train_obs <- training( obs_split )
+test_obs <- testing( obs_split )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;Using the training data, visualize the two new attributes we introduced to the data: `bmi` as a function of `weight_cat_num`. 
+```{r}
+ggplot( train_obs, aes( y = bmi, x = factor( weight_cat_num ) ) ) +
+  geom_boxplot() +
+  ggtitle( 'BMI ~ Weight Category' ) +
+  xlab( 'Weight Category' ) +
+  scale_x_discrete( breaks = c( '-1', '0', '1', '2', '3', '4', '5' ) , labels = c( "Insuff. Wgt", "Normal Wgt", "Overweight L1", "Overweight L2", "Obesity T1", "Obesity T2", "Obesity T3" ) )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The figure above clearly shows that as the weight category increases from insufficient weight up to Obesity level 3, there is a readily appearant increase in BMI. This should come as no surprize, because BMI was used by the creaters of the dataset to delineate obesity categories. But do the ranges defined by the authors yield a linear fit to the data?
+
+&nbsp;&nbsp;&nbsp;&nbsp;Next we fit and evaluate a linear regression of the training dataset:
+```{r}
+obs_lm <- lm( bmi ~ weight_cat_num, data = train_obs )
+summary( obs_lm )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The linear model yields a fit to the data described by the following equation:
+$$\mbox{BMI} = 21.37 + 3.95 * \mbox{Weight Category}$$
+&nbsp;&nbsp;&nbsp;&nbsp;The $R^2$ value is very high: 0.9557 which strongly suggests that BMI explains much of that variance for weight category. Additionally, the p-value is very small: 2.2e-16 suggesting a very high statistical significance to our linear regression fit.
+
+&nbsp;&nbsp;&nbsp;&nbsp;Here, the `ggfortify` method `autoplot()` is used to assess the appropriateness of the linear model for this data.
+```{r, message=FALSE}
+autoplot( obs_lm, which = 1:4 ) + theme_minimal()
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The plots above suggest that the variance for the weight categories is highly linear for all but the highest category, 'Obesity Type 3'. This is not surprizing, because as this category takes any BMI over 40, whereas the other categories have set intervals. Generally, however, the a linear model does very well at describing how BMI increases with weight categories. Therefore, going forward, we will use BMI as a continuous variable to explore the relationship of other data attibutes with obesity. For example, the following code plots the distribution of `bmi` values for the categorical variable `eats_high_calor_food`: 
+```{r}
+ggplot( train_obs, aes( y = bmi, x = factor( eats_high_calor_food ) ) ) +
+  geom_boxplot() +
+  ggtitle( 'BMI ~ Eats High Calorie Foods' ) +
+  xlab( 'Eats High Calorie Foods' ) 
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The figure above shows that subjects who answer 'yes' when asked if they regularly consume high calorie food are more likely to have a higher BMI than subjects that responded 'no'. However, is this difference significant? Let's fit a linear model to the data:
+```{r}
+bmi_by_hical <- lm( bmi ~ eats_high_calor_food, data = train_obs )
+summary( bmi_by_hical )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;Above is the summary of the linear regression of this approach to the data. We see that, on average, subjects that responded 'yes' have a BMI that is 6.2891 index points higher than subjects who responded 'no'. Additionally, the p-value is very small which suggests that the difference is significant. However, the $R^2$ value is tiny; the variance of BMI values is not very well described by this data attribute. Can we do better? Let's see what happens when we perform a multiple linear regression by including several other data features. For simplicity, this analysis will only use the binary (yes/no) attributes in the dataset:
+```{r}
+bmi_by_multi <- lm( bmi ~ eats_high_calor_food + family_history_with_overweight + 
+                      SMOKE + counts_calories + Gender, data = train_obs )
+summary( bmi_by_multi )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The p-value remains the same. However, the $R^2$ value has increased from 0.06428 to 0.2687 suggesting that by including more features as parameters for our linear model fit, we are able to model `r (0.2587-0.06428)*100`% more of the variance in BMI data. The Coefficients tell us that eating high calorie food, smoking and having a family history of obesity have a postive correlation with bmi whereas being male and counting calories have a negative correlation to BMI. Looking at the p-values for the coefficients, we see that all are significant except the `SMOKE` parameter. Let's subtract this from the linear model fit:
+
+```{r}
+bmi_by_multi <- lm( bmi ~ eats_high_calor_food + family_history_with_overweight + 
+                      counts_calories + Gender, data = train_obs )
+summary( bmi_by_multi )
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;Notice how shedding the extra parameter leads to a slightly higher $R^2$ value.
+
+&nbsp;&nbsp;&nbsp;&nbsp;Now to see how this model performs with the test subset of the data that we set aside at the beginning of the analysis:
+```{r}
+bmi_predict <- bmi_by_multi %>% predict( test_obs )
+test_rsq <- rsq_vec( test_obs$bmi, bmi_predict )
+test_rsq
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The result is a comparable $R^2$ value for the test data compared to the training data.
+
+&nbsp;&nbsp;&nbsp;&nbsp;This multiple linear regression is a start towards modelling BMI data with a few of the binary attributes in the dataset. However, modelling is an itterative process, so the next steps is to see if adding other parameters can improve out model's ability to describe bmi data.
+
+You made it this far. Wow. Thank you for reading!
+
+<br><br><br>
