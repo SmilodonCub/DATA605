@@ -1,0 +1,160 @@
+---
+title: 'Data 605 Homework Wk12'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;This assignment with use the 'who.csv' data set. The following code loads the necessary `r` libraries and data into the working environment:
+```{r, message=FALSE}
+library( tidyverse ) #tidyverse to model our data & other functions
+library( ggplot2 ) #basic plotting of our lin. model fit + data
+library( ggfortify ) #plot diagnostics of our lin. model
+library( tidymodels )
+```
+
+```{r}
+who_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/who.csv'
+who_df <- read.csv( who_url ) #read data in as an r dataframe
+glimpse( who_df )
+```
+
+
+## 1
+Provide a scatterplot of LifeExp~TotExp, and run simple linear regression. Do not transform the variables. Provide and interpret the F statistics, R^2, standard error,and p-values only. Discuss whether the assumptions of simple linear regression met.
+
+```{r}
+ggplot( who_df, aes( x = TotExp, y = LifeExp ) ) +
+  geom_point( shape=1 ) +
+  geom_smooth( method = lm )
+```
+
+
+```{r}
+who_lm1 <- lm( LifeExp ~ TotExp, data = who_df )
+summary( who_lm1 )
+```
+
+Interpretation of Stats:
+
+1. **F statistics**: The F-stat informs us if there is a relationship between the predictor and response variable. Here the F-stat is much larger than 1 but still small compared to the number of datapoints.
+2. **$R^2$**: The $R^2$ value is quite small and suggests that this model only describes ~25% of that variance in the data.
+3. **residual standard error** This describes the quality of the lm fit. this suggests that, on average, the model is off by ~9.3 for each estimation
+4. **p-values**the value is much smaller that conventional limits (eg 0.05 or 0.01). Therefore we can assume that there is a statistically significant relationship for the coefficients that describe the linear relationship.
+
+From the stats summary, we see that there is statistical significance for the linear model fit. However, is a linear model appropriate for this data distribution? the following visuals help us address this:
+
+```{r, message=FALSE}
+autoplot( who_lm1, which = 1:2 ) + theme_minimal()
+```
+
+Jus tlooking at the Residuals vs fitted & QQ-plot, we can see that a linear model is not appropriate here. The Residuals vs fitted points deviate from horizontal 0 line throughout the data which shows patterns in the variance that change through the data series; ideally the values should cluster along the 0-line with even variance. If a linear model were appropriate, the data points should fall along the dashed unity line in the QQ-plot, however, the distribution does not fit. Therefore, we can conclude that a linear model is not appropriate here.
+
+## 2
+Raise life expectancy to the 4.6 power (i.e., LifeExp^4.6). Raise total expenditures to the 0.06 power (nearly a log transform, TotExp^.06). Plot LifeExp^4.6 as a function of TotExp^.06, and r re-run the simple regression model using the transformed variables. Provide and interpret the F statistics, R^2, standard error, and p-values. Which model is "better?"
+
+
+```{r}
+who_df_mod <- who_df %>% mutate( LifeExp = LifeExp^4.6 ) %>%
+  mutate( TotExp = TotExp^(0.06))
+
+ggplot(who_df_mod, aes( x = TotExp, y = LifeExp ) ) +
+  geom_point( shape=1 ) +
+  geom_smooth( method = lm )
+  
+```
+
+```{r}
+who_lm2 <- lm( LifeExp ~ TotExp, data = who_df_mod )
+summary( who_lm2 )
+```
+
+Interpretation of Stats:
++ **F statistic**: For this linear model, the F-stat 507.7 is much greater than 1 and large compared to the number of data points (188). This suggests there is a statistically significant relationship between the predictive and descriptive variables
++ **$R^2$**: The $R^2$ value suggests that the model describes ~73% of the variance in the data
++ **residual standard error** This values suggests that the typical extimate for the model is off by 9049000. This seems reeeeaaaallly big compare to the previous model but can be explained by the artificial scaling we introduced. However, I have no idea why we would beat our data in to linear shape and in the process introduced artifacts instead of just fiting a nonlinear model.
++ **p-values* 2.2e-16 is very small suggesting that there is statistical significance to the linear fit of this model.
+
+This visualizations will guide our descision as to whether a linear model is appropriate for our data:
+```{r, message=FALSE}
+autoplot( who_lm2, which = 1:2 ) + theme_minimal()
+```
+**Residuals vs Fitted**: the mode of the residuals clusters along the horizontal axis of the fitted values but there are some changes in the variance across the data range. **QQ-plot**: the data fall reasonably well along the unity line. **Therefore**, we can say that this data is reasonably appropriate for a linear model fit.
+
+**In Conclusions**, we can say that this second linear model that scales the data does a better job at modeling LifeExp ~ TotExp
+
+## 3
+Using the results from 3, forecast life expectancy when TotExp^.06 =1.5. Then forecast life expectancy when TotExp^.06=2.5.
+```{r}
+predict1pnt5 <- predict(who_lm2, data.frame(TotExp=1.5) )
+predict2pnt5 <- predict(who_lm2, data.frame(TotExp=2.5) )
+answr <- paste( 'Prediction at TotExp^.06 = 1.5: ', predict1pnt5,
+       'Prediction at TotExp^.06 = 2.5: ', predict2pnt5,
+       'Rescaled Prediction at TotExp^.06 = 1.5: ', predict1pnt5^(1/4.6),
+       'Rescaled Prediction at TotExp^.06 = 2.5: ', predict2pnt5^(1/4.6),
+       sep='\n')
+cat( answr )
+```
+
+## 4
+Build the following multiple regression model and interpret the F Statistics, R^2, standard error, and p-values. How good is the model?
+
+The question is phrased ambiguously. Am I to fit to original or scaled data?
+Here is a look at the original WHO data:
+```{r}
+who_lm3 <- lm( LifeExp ~ TotExp + PropMD + TotExp*PropMD, data = who_df )
+summary( who_lm3 )
+```
+
+```{r}
+who_predict <- who_lm3 %>% predict( who_df )
+ggplot( who_df, aes( x = TotExp, y = LifeExp ) ) +
+  geom_point( shape=1 ) +
+  geom_point( shape=3, aes( x = TotExp, y = who_predict ) )
+```
+
+...and here is a look with the artificially scaled WHO data:
+```{r}
+who_lm3 <- lm( LifeExp ~ TotExp + PropMD + TotExp*PropMD, data = who_df_mod )
+who_predict <- who_lm3 %>% predict( who_df_mod )
+ggplot( who_df_mod, aes( x = TotExp, y = LifeExp ) ) +
+  geom_point( shape=1 ) +
+  geom_point( shape=3, aes( x = TotExp, y = who_predict ) )
+```
+```{r}
+summary(who_lm3)
+```
+
+From the look of the two fits, I'm going to assume that the exercise wants us to use the scaled data, so I'll evaluate those summary stats:
+
+Interpretation of Stats:
++ **F statistic**: the F-stat 180.3 is much greater than 1 and large compared to the number of data points (188). This suggests there is a statistically significant relationship between the predictive and descriptive variables
++ **$R^2$**: The $R^2$ value suggests that the model describes ~74% of the variance in the data
++ **residual standard error** This suggests a typical estimate for the model is off by 88520000. This is an improvement over the previous model attempt
++ **p-values* 2.2e-16 is very small suggesting that there is statistical significance to the linear fit of this model.
+
+```{r, message=FALSE}
+autoplot( who_lm3, which = 1:2 ) + theme_minimal()
+```
+
+
+
+There aren't clear gains in statistical significance of fit for this model or the 2nd model. In situations like this, I prefere to stick with the simple model. However, I do not agree with forcing the data to look linear (use of scaling), because this introduces artifacts and distortions to the data. It is clearly obvious from the intial linear fit that a nonlinear model is more appropriate for this data.
+
+## 5
+Forecast LifeExp when PropMD=.03 and TotExp = 14. Does this forecast seem realistic? Why or why not?
+```{r}
+predictmulti <- predict(who_lm3, data.frame(TotExp=14, PropMD=0.03) )
+answr <- paste( 'Prediction at TotExp^.06 = 14: ', predictmulti,
+                'Rescaled Prediction at TotExp^.06 = 14: ', predictmulti^(1/4.6), sep='\n')
+cat( answr )
+```
+No, this does not seem like a realistic forcast to make, because it is very far outside of the range of the existing data.
+
+
+<br><br><br>
