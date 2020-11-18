@@ -1,0 +1,87 @@
+---
+title: 'Obesity Levels with Eating & Physical habits Dataset'
+subtitle: 'a multiple regression analysis done in the tidyverse'
+author: 'by Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+Using R, build a multiple regression model for data that interests you.  Include in this model at least one quadratic term, one dichotomous term, and one dichotomous vs. quantitative interaction term. Interpret all coefficients. Conduct residual analysis. Was the linear model appropriate? Why or why not?
+
+```{r, message=FALSE}
+library( tidyverse ) #tidyverse to model our data & other functions
+library( ggplot2 ) #basic plotting of our lin. model fit + data
+library( ggfortify ) #plot diagnostics of our lin. model
+library( tidymodels )
+library( relaimpo )
+library(reshape2)
+library( hrbrthemes )
+```
+
+
+load the .csv data for 3 Beijing districts into the `r` environment as `data.frames`
+```{r}
+guanyan_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/Guanyuan_dat.csv'
+guanyan_df <- read.csv( guanyan_url ) #read data in as an r dataframe
+dongsi_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/Dongsi_dat.csv'
+dongsi_df <- read.csv( dongsi_url ) #read data in as an r dataframe
+huairou_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/Huairou_dat.csv'
+huairou_df <- read.csv( huairou_url ) #read data in as an r dataframe
+```
+
+```{r}
+beijing_3d_df <- rbind( guanyan_df, dongsi_df, huairou_df )
+glimpse( beijing_3d_df )
+```
+
+The air particulates are different components of air polution. Can be shown that these features have high covariance:
+```{r}
+
+polutants <- beijing_3d_df %>% 
+  dplyr::select( PM2.5:O3 ) %>%
+  drop_na()
+
+polutants_cov <- round( cor( polutants ), 2 ) 
+polcov_melted <- melt( polutants_cov )
+polcov_melted 
+
+ggplot( data = polcov_melted, aes(x=Var1, y=Var2, fill=value), col = cm.colors() ) + 
+  geom_tile() +
+  scale_fill_distiller(palette = "RdYlBu") +
+  theme_ipsum() +
+  ggtitle( 'Correlation Heat Map' )
+```
+
+
+
+Use step-wise regression methods to develop a linear multiple regression model using the data from Guanyan
+```{r}
+guanyan_filt <- beijing_3d_df %>% 
+  filter( station == 'Guanyuan' ) %>%
+  dplyr::select( !c( station, No, PM2.5, PM10, SO2, NO2, O3, wd ) ) %>%
+  drop_na()
+
+int_only <- lm( CO ~ 1, data = guanyan_filt )
+all_features <- lm( CO ~ . , data = guanyan_filt )
+stepwise <- stats::step( int_only, scope = list( lower = int_only, upper = all_features ),
+                  direction = 'both', trace = 0, steps = 1000 )
+sigcoeffs <- names( unlist( stepwise[1] ) )
+sigcoeffs
+```
+```{r}
+summary( stepwise )
+```
+```{r}
+all_features <- lm( CO ~ . , data = guanyan_filt )
+relimportance <- calc.relimp( all_features, type = 'lmg', rela = TRUE )
+sort( relimportance$lmg, decreasing = TRUE )
+```
+
+```{r}
+
+```
+
+
+
+
