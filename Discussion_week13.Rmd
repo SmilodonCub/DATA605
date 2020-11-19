@@ -1,5 +1,5 @@
 ---
-title: 'Obesity Levels with Eating & Physical habits Dataset'
+title: 'Beijing Air Quality: Estimating particulate load from concentration of common pollutants.'
 subtitle: 'a multiple regression analysis done in the tidyverse'
 author: 'by Bonnie Cooper'
 output:
@@ -7,20 +7,28 @@ output:
     theme: tactile
     highlight: github
 ---
-Using R, build a multiple regression model for data that interests you.  Include in this model at least one quadratic term, one dichotomous term, and one dichotomous vs. quantitative interaction term. Interpret all coefficients. Conduct residual analysis. Was the linear model appropriate? Why or why not?
+![](https://digitalagencynetwork.com/wp-content/uploads/2018/05/best-digital-marketing-agencies-beijing.jpg)
+
+&nbsp;&nbsp;&nbsp;&nbsp;Small and fine particulates have become a more recent measure of air quality. The following code performs a regression analysis to model particulate load by other pollutants typically used to measure air quality such as $O_3$ (ozone), CO (carbon monoxide), $NO_2$ (Nitrogen Dioxide) and $SO_2$ (Sulfer Dioxide). Air quality data from 2 districts of Beijing will be used in the analysis. Data from Guanyan the Xicheng district will be used to train the data while data from the Dongsi in the neighboring district of Dongcheng will be used to test the model. Additionally, we will deploy the model to predict particulates loads for Huairou, a Beijing district with a much lower population density than the city center. The data is part of a larger set hosted on the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/Beijing+Multi-Site+Air-Quality+Data)
+
+|     District     | Pop. Density (/km^2)  |
+|:----------------:|:---------------------:|
+|  XiCheng 西城区  |         26,731        |
+| DongCheng 东城区 |         22,635        |
+|  Huairou 怀柔区  |          146          |
 
 ```{r, message=FALSE}
 library( tidyverse ) #tidyverse to model our data & other functions
 library( ggplot2 ) #basic plotting of our lin. model fit + data
 library( ggfortify ) #plot diagnostics of our lin. model
-library( tidymodels )
-library( relaimpo )
+library( tidymodels ) #lm model & more
+library( relaimpo ) #calculating relative importance
 library(reshape2)
 library( hrbrthemes )
 ```
 
 
-load the .csv data for 3 Beijing districts into the `r` environment as `data.frames`
+&nbsp;&nbsp;&nbsp;&nbsp;load the .csv data for 3 Beijing districts into the `r` environment as `data.frames`
 ```{r}
 guanyan_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/Guanyuan_dat.csv'
 guanyan_df <- read.csv( guanyan_url ) #read data in as an r dataframe
@@ -30,40 +38,41 @@ huairou_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/Hua
 huairou_df <- read.csv( huairou_url ) #read data in as an r dataframe
 ```
 
+&nbsp;&nbsp;&nbsp;&nbsp;consolidate the data into a single dataframe:
 ```{r}
-beijing_3d_df <- rbind( guanyan_df, dongsi_df, huairou_df )
+beijing_3d_df <- rbind( guanyan_df, dongsi_df, huairou_df ) %>%
+  rename( PM2_5 = PM2.5 ) #some packages have issues with '.' in the label
 glimpse( beijing_3d_df )
 ```
 
-The air particulates are different components of air polution. Can be shown that these features have high covariance:
+&nbsp;&nbsp;&nbsp;&nbsp;The features in the data that give the values for air particulates are all different components used to measure air polution. We can visualize the correlations between these attributes:
 ```{r}
-
 polutants <- beijing_3d_df %>% 
-  dplyr::select( PM2.5:O3 ) %>%
+  dplyr::select( PM2_5:O3 ) %>%
   drop_na()
 
 polutants_cov <- round( cor( polutants ), 2 ) 
 polcov_melted <- melt( polutants_cov )
-polcov_melted 
 
 ggplot( data = polcov_melted, aes(x=Var1, y=Var2, fill=value), col = cm.colors() ) + 
   geom_tile() +
-  scale_fill_distiller(palette = "RdYlBu") +
+  scale_fill_distiller(palette = "RdBu") +
   theme_ipsum() +
-  ggtitle( 'Correlation Heat Map' )
+  ggtitle( 'Correlation Heat Map' ) +
+  geom_text( aes( Var2, Var1, label = value ), color = 'black', size=4 )
 ```
 
+&nbsp;&nbsp;&nbsp;&nbsp;`PM2.5` (renamed here as PM2_5) will now be modelled by the other attributes in the dataset as a linear multiple regression. `PM2.5` refers to the measure of microscopic particles less than or equal to 2.5 microns. These very small particulates have been shown to have impacts on health and to cause disease and are now a [common measure of air polution](https://www.worldbank.org/en/news/feature/2015/07/14/understanding-air-pollution-and-the-way-it-is-measured).  
 
-
-Use step-wise regression methods to develop a linear multiple regression model using the data from Guanyan
+&nbsp;&nbsp;&nbsp;&nbsp;Use step-wise regression methods to develop a linear multiple regression model using the data from Guanyan
 ```{r}
 guanyan_filt <- beijing_3d_df %>% 
   filter( station == 'Guanyuan' ) %>%
-  dplyr::select( !c( station, No, PM2.5, PM10, SO2, NO2, O3, wd ) ) %>%
+  dplyr::select( !c( station, No ) ) %>%
   drop_na()
 
-int_only <- lm( CO ~ 1, data = guanyan_filt )
-all_features <- lm( CO ~ . , data = guanyan_filt )
+int_only <- lm( PM2_5 ~ 1, data = guanyan_filt )
+all_features <- lm( PM2_5 ~ . -wd, data = guanyan_filt )
 stepwise <- stats::step( int_only, scope = list( lower = int_only, upper = all_features ),
                   direction = 'both', trace = 0, steps = 1000 )
 sigcoeffs <- names( unlist( stepwise[1] ) )
@@ -72,16 +81,61 @@ sigcoeffs
 ```{r}
 summary( stepwise )
 ```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The above code used both forward and backward step-wise regression approaches to our data; this arrives at the best fit of the data by either adding features (forward) or removing features (backward) from the model and evaluating until the best result if found. Many of the features have coefficients that evaluate to be statistically relevant to the model. The model has a high R-squared value suggesting that these features can be weighted in a linear regression to explain 87.2% of the variance in the data. The p-value is small suggesting statistical significance to the relationship of the attributes to the value of small paticulates. However, the F-statistic is large suggesting a statistical significance.  
+
+&nbsp;&nbsp;&nbsp;&nbsp;The following code will calculate the relative importance of the attributes. perhaps the model can be stream-lined by removing features that do not contribute much to the overall fit of the data.
 ```{r}
-all_features <- lm( CO ~ . , data = guanyan_filt )
+all_features <- lm( PM2_5 ~ . -wd, data = guanyan_filt )
 relimportance <- calc.relimp( all_features, type = 'lmg', rela = TRUE )
 sort( relimportance$lmg, decreasing = TRUE )
 ```
 
+&nbsp;&nbsp;&nbsp;&nbsp;From the output above, some features do not contribute much to the model, so they will be discarded in the next fit. Using an arbitrary threshold of 1%, we will simplify the number of parameters in the model. This leaves us with PM10, CO, NO2, SO2, DEWP, WSPM, TEMP and O3. Additionally, the categorical variable `wd` for wind direction will be incorporated.
 ```{r}
-
+guanyan_filt <- beijing_3d_df %>% 
+  filter( station == 'Guanyuan' ) %>%
+  dplyr::select( !c( station, No, day, year, month, RAIN, hour, PRES ) ) %>%
+  drop_na()
+int_only <- lm( PM2_5 ~ 1, data = guanyan_filt )
+all_features <- lm( PM2_5 ~ . , data = guanyan_filt )
+stepwise <- stats::step( int_only, scope = list( lower = int_only, upper = all_features ),
+                  direction = 'both', trace = 0, steps = 1000 )
+sigcoeffs <- names( unlist( stepwise[1] ) )
+sigcoeffs
+```
+```{r}
+summary( stepwise )
 ```
 
+&nbsp;&nbsp;&nbsp;&nbsp;The simplified model loses explanation of a fraction of a percent of variance in the data. However, there is a gain in the f-statistic and hence the statistical significance of the model.
+
+&nbsp;&nbsp;&nbsp;&nbsp;Next, the model predictions will be tested for Dongsi station in the neighboring district of Dongcheng.
+```{r}
+dongsi_filt <- beijing_3d_df %>% 
+  filter( station == 'Dongsi' ) %>%
+  dplyr::select( !c( station, No, day, year, month, RAIN, hour, PRES ) ) %>%
+  drop_na()
+dongsi_predict <- stepwise %>% predict( dongsi_filt )
+test_rsq <- rsq_vec( dongsi_filt$PM2_5, dongsi_predict )
+test_rsq
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;The model developed using air quality data from Guanyuan Station in Xicheng was able to explain a comparable amount of the variance in the data for Dongsi station in neighboring DongCheng district of central Beijing. However, these districts are very similar in that they both have very high population density. Will the model perform well for an area with less poeple? Huairou station is located north of the city center and has the lowest population density of all Beijing Districts. The following code will evaluate the Guanyuan based model's predictions for Huairou:
+```{r}
+huairou_filt <- beijing_3d_df %>% 
+  filter( station == 'Huairou' ) %>%
+  dplyr::select( !c( station, No, day, year, month, RAIN, hour, PRES ) ) %>%
+  drop_na()
+huairou_predict <- stepwise %>% predict( huairou_filt )
+test_rsq <- rsq_vec( huairou_filt$PM2_5, huairou_predict )
+test_rsq
+```
+&nbsp;&nbsp;&nbsp;&nbsp;Even though Huairou has a much lower population density than Xicheng, the model does approximately as well at estimating the variance.
+
+
+
+<br><br><br>
 
 
 
