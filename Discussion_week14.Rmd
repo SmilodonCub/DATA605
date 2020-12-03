@@ -1,0 +1,82 @@
+---
+title: 'Discussion Week 14'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# 7.1.18
+
+## Find the total area enclosed by the functions $f$ and $g$ where:
+
+$$f(x) = -x^3 +5x^2+2x+1$$
+$$g(x) = 3x^2+ x+3$$
+
+to start, let's visualize the functions:
+```{r, message=FALSE}
+library( ggplot2 )
+p <- ggplot(data = data.frame(x = 0), mapping = aes(x = x))
+fun.1 <- function(x) -x^3 +5*x^2 + 2*x + 1
+fun.2 <- function(x) 3*x^2 + x +3
+p + stat_function(fun = fun.1) + stat_function(fun = fun.2) + xlim(-2,3)
+```
+
+The two functions appear to enclose a bounded regions between the x-values of -1,1 &2 (ish). Now to solve more definitively where the two functions intersect (have the same values).
+$$-x^3 +5x^2+2x+1 = 3x^2+ x+3\rightarrow$$
+use `uniroot` to find the x value of the intersections for each interval that approximates where a crossing occurs based on the visualization:
+```{r}
+root1 <- uniroot(function(x)  fun.1(x) - fun.2(x)  , c(-1.5,-0.5), tol=1e-8)  
+root2 <- uniroot(function(x)  fun.1(x) - fun.2(x)  , c(0.5,1.5), tol=1e-8)  
+root3 <- uniroot(function(x)  fun.1(x) - fun.2(x)  , c(1.5,2.5), tol=1e-8) 
+paste( 'Three roots were approximated to have the x-values:', root1$root, ',', round( root2$root,6),',' , round(root3$root,6))
+```
+solving for the y-values:
+```{r}
+yn1 <- fun.1( -1 )
+y1 <- fun.1( 1 )
+y2 <- fun.1( 2 )
+paste( 'The y-values for the roots:', yn1, ',', y1, ',', y2 )
+```
+
+Therefore, find the area of the regions bounded by the points ( -1,5 ), ( 1,7 ) & ( 2,17 ).  
+To do this, we will use Theorem 7.1.1 (pg354) to find the difference of the ingrated functions with respect to x from values for both bounded regions from $x=-1$ to $x=1$, and from $x=1$ to $x=2$
+
+$$\mbox{Theorem 7.1.1:}\int_a^b(f(x)-g(x))dx$$
+
+Area of bounded region from $x=-1$ to $x=1$
+$$\int_{-1}^{1}((3x^2 + x + 3) - (-x^3 + 5x^2 +2x+ 1))dx \rightarrow$$
+$$\int_{-1}^{1}(3x^3-2x^2 -x+2)dx \rightarrow$$
+$$\frac{3x^4}{4}-\frac{2x^3}{3} - \frac{x^2}{2} + 2x |_{-1}^1 $$
+Now to take the difference of the expression evaluated at -1, 1:
+```{r}
+fun.3 <- function(x) (3*x^4)/4 -(2*x^3)/3 - (x^2)/2 + 2*x
+arean1t1 <- fun.3( 1 ) - fun.3( -1 )
+paste( 'Area bounded by curves =', arean1t1 )
+```
+
+Area of bounded region from $x=1$ to $x=2$
+$$\int_{1}^{2}((-x^3 + 5x^2 +2x+ 1)-(3x^2 + x + 3))dx \rightarrow$$
+$$\int_{1}^{2} (-x^3 +2x^2+x-2)dx \rightarrow$$
+$$-\frac{x^4}{4} + \frac{2x^3}{3} + \frac{x^2}{2} - 2x |_{1}^2$$
+
+Now to take the difference of the expression evaluated at 1, 2:
+```{r}
+fun.4 <- function(x) (-1*x^4)/4 +(2*x^3)/3 + (x^2)/2 -2*x
+area1t2 <- fun.4( 2 ) - fun.4( 1 )
+paste( 'Area bounded by curves =',  area1t2 )
+```
+
+The total area bounded by the two functions is the sum of these two subregions:
+```{r}
+totalarea <- area1t2 + arean1t1
+paste( 'The total bounded area =', totalarea )
+```
+
+
+
+<br><br><br>
