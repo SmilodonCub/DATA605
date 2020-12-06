@@ -1,0 +1,81 @@
+---
+title: 'Homework Week 14'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Homework Week 14
+
+This week, we’ll work out some Taylor Series expansions of popular functions. For each function, only consider its valid ranges as indicated in the notes when you are
+computing the Taylor Series expansion.
+
+* $f(x) = \frac{1}{(1-x)}$
+* $f(x) = e^x$
+* $f(x) = ln( 1+x )$
+
+The Taylor Series expansion is given by:
+ $$f(x)=\sum_{n=0}^{\infty} \frac{f^{(n)}(c)}{n!}(x-c)^n$$
+
+Working out the first several terms:
+$$f(x) = f(c) + \frac{f'(c)}{1!}(x-c) + \frac{f''(c)}{2!}(x-c)^2 + \frac{f'''(c)}{3!}(x-c)^3 + \frac{f''''(c)}{4!}(x-c)^4 + \ldots$$
+
+## Applying the formula to $\frac{1}{(1-x)}$:
+$$\frac{1}{(1-x)} = 1 + \frac{\frac{d}{dx}(\frac{1}{(1-x)})(0)}{1!}x + \frac{\frac{d^2}{dx^2}(\frac{1}{(1-x)})(0)}{2!}x^2 + \frac{\frac{d+3}{dx^3}(\frac{1}{(1-x)})(0)}{3!}x^3 + \frac{\frac{d^4}{dx^4}(\frac{1}{(1-x)})(0)}{4!}x^4 + \ldots$$
+$$= 1 + \frac{\frac{1}{(1-0)^2}}{1!}x + 
+\frac{\frac{2}{(1-0)^3}}{2!}x^2 + 
+\frac{\frac{6}{(1-0)^4}}{3!}x^3 + 
+\frac{\frac{24}{(1-0)^5}}{4!}x^4 + \ldots$$
+
+
+$$= 1 + \frac{1}{1!}x + 
+\frac{2}{2!}x^2 + 
+\frac{6}{3!}x^3 + 
+\frac{24}{4!}x^4 + \ldots$$
+
+$$= 1 + \frac{1!}{1!}x + 
+\frac{2!}{2!}x^2 + 
+\frac{3!}{3!}x^3 + 
+\frac{4!}{4!}x^4 + \ldots$$
+
+$$= 1 + x + x^2 + x^3 + x^4 + \ldots$$
+Seeing the pattern in the expansion terms, we can write:
+$$\frac{1}{(1-x)} = \sum_{n=0}^{\infty}x^n$$
+
+
+## Applying the formula to $f(x) = e^x$:
+$$e^x= 1 + \frac{\frac{d}{dx}(e^x)(0)}{1!}x + \frac{\frac{d^2}{dx^2}(e^x)(0)}{2!}x^2 + \frac{\frac{d+3}{dx^3}(e^x)(0)}{3!}x^3 + \frac{\frac{d^4}{dx^4}(e^x)(0)}{4!}x^4 + \ldots$$
+$$= 1 + \frac{1}{1!}x +\frac{1}{2!}x^2 + \frac{1}{3!}x^3 + \frac{1}{4!}x^4 + \ldots$$
+Seeing the pattern in the expansion terms, we can write:
+$$e^x = \sum_{n=0}^{\infty}\frac{x^n}{n!}$$
+
+## Applying the formula to $f(x) = ln( 1+x )$:
+$$ln( 1+x )= 0 + \frac{\frac{d}{dx}(ln( 1+x ))(0)}{1!}x + 
+\frac{\frac{d^2}{dx^2}(ln( 1+x ))(0)}{2!}x^2 + 
+\frac{\frac{d+3}{dx^3}(ln( 1+x ))(0)}{3!}x^3 + 
+\frac{\frac{d^4}{dx^4}(ln( 1+x ))(0)}{4!}x^4 + \ldots$$
+
+$$= 0 + \frac{\frac{1}{(1+0)}}{1!}x + 
+\frac{-\frac{1}{(1+0)^2}}{2!}x^2 + 
+\frac{\frac{2}{(1+0)^3}}{3!}x^3 + 
+\frac{\frac{6}{(1+0)^4}}{4!}x^4 + \ldots$$
+
+$$= 0 + \frac{1}{1!}x + 
+\frac{-1}{2!}x^2 + 
+\frac{2}{3!}x^3 + 
+\frac{6}{4!}x^4 + \ldots$$
+
+$$= x - \frac{1}{2}x^2 + \frac{1}{3}x^3 - \frac{1}{4}x^4 + \ldots$$
+Seeing the pattern in the expansion terms, we can write:
+$$ln(1+x) = \sum_{n=0}^{\infty}\frac{x^n}{n}\cdot 1^{(-1)^n}$$
+
+
+
+
+<br><br><br>
