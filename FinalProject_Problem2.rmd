@@ -1,0 +1,413 @@
+---
+title: 'DATA605 Final Project'
+subtitle: 'Problem 2'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Computational Mathematics: Kaggle Dataset
+You are to register for Kaggle.com (free) and compete in the [House Prices: Advanced Regression Techniques competition.](https://www.kaggle.com/c/house-prices-advanced-regression-techniques)
+
+Make ready with relevant libraries:
+```{r, message=FALSE}
+library( tidyverse )
+library( tidymodels )
+library( ggplot2 )
+library( correlationfunnel )
+library(reshape2)
+library( hrbrthemes )
+library( matlib )
+library( matrixcalc )
+library( MASS )
+library( outliers )
+library( ggfortify )
+```
+
+
+## Descriptive & Inferential Statistics:
+Provide univariate descriptive statistics and appropriate plots for the training data set. Provide a scatterplot matrix for at least two of the independent variables and the dependent variable. Derive a correlation matrix for any three quantitative variables in the dataset. Test
+the hypotheses that the correlations between each pairwise set of variables is 0 and provide an 80% confidence interval. Discuss the meaning of your analysis. Would you be worried about familywise error? Why or why not?
+
+Begin by importing the data:
+```{r}
+train_url  <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/house-prices-advanced-regression-techniques/train.csv'
+test_url <- 'https://raw.githubusercontent.com/SmilodonCub/DATA605/master/house-prices-advanced-regression-techniques/test.csv'
+
+train_df <- read.csv( train_url )
+test_df <- read.csv( test_url )
+```
+
+Basic size of dataset:
+```{r}
+sizedf <- dim( train_df )
+mes <- paste( 'This dataset holds', sizedf[1], 'records\nEach record has data on', sizedf[2], 'features' )
+cat( mes, sep = '\n' )
+```
+This is not a particularly large dataset as there are only `r sizedf[1]` records. However, it is quite high dimentional with each record holding `r sizedf[2]` features.
+
+Explore the training dataset with descriptive statistics and appropriate visualizations:
+```{r}
+glimpse( train_df )
+```
+A quick scan of the data with the `glimpse()` function shows that the data is a mix of categorical (e.g. 'Street' and 'Heating ) and quantitative variables (e.g. 'Lot Area' and 'TotRmsAbvGrd').  
+
+### Target Variable: SalePrice
+We would like to use the features to predict `SalePrice`. It is worth taking a moment to explore `SalePrice`:
+
+```{r}
+summary( train_df$SalePrice )
+```
+```{r}
+SP_histo <- ggplot( train_df, aes( x=SalePrice ) ) + geom_histogram( fill="#69b3a2", color="#e9ecef", alpha=0.9 ) + ggtitle( 'Sale Price' )  
+SP_histo
+```
+Judging by the envelope of the histogram and the fact that the distribution mean is greater than the median, we can see that the target distribution is skewed. To account for this, we will log-transform SalePrice to improve the linearity.
+```{r}
+l10t_SalePrice <- data.frame( 'SalePrice' = log( train_df$SalePrice +1 ) );
+SP_histo <- ggplot( l10t_SalePrice, aes( x=SalePrice ) ) + geom_histogram( fill="#69b3a2", color="#e9ecef", alpha=0.9 ) + ggtitle( 'log10 transform Sale Price' )  
+SP_histo
+```
+
+### Correlations of Numerical Variables
+```{r}
+numerics <- train_df %>% dplyr::select( where( is.numeric ) )
+dim( numerics )
+```
+Find the numeric features with the highest correlation to the target data:
+```{r}
+numcorrs <- correlate( numerics, SalePrice )
+head( numcorrs,15 )
+```
+The features listed after SalePrice (which of course fully correlates to itself) have the highest correlations to the target. We can also visualize correlation with a correlation heatmap plot:
+```{r}
+top12names = c( 'OverallQual','GrLivArea', 'GarageCars', 'GarageArea', 'TotalBsmtSF', 'X1stFlrSF','FullBath', 'TotRmsAbvGrd', 'YearBuilt', 'YearRemodAdd',  'Fireplaces', 'BsmtFinSF1')
+top12 <- train_df %>% 
+  dplyr::select( top12names ) %>%
+  drop_na()
+top12_cor <- round( cor( top12 ), 2 ) 
+top12_melted <- melt( top12_cor )
+
+ggplot( data = top12_melted, aes(x=Var1, y=Var2, fill=value), col = cm.colors() ) + 
+  geom_tile() +
+  scale_fill_distiller(palette = "RdBu") +
+  theme_ipsum() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  ggtitle( 'Correlation Heat Map' )
+```
+
+The heat map is very informative, because it reveals that several of the features with the highest correlation to `SalePrice` are also highly correlated between themselves. For instance, `GarageArea` is highly correlated with `GarageCars`; this makes sense because garages with a higher holding capacity will necessarily be larger. Additionally, `TotalBsmentSF` (total basement square feet) is highly correlated with `X1stFlrSF` (1st floor square feet); again, this makes intuitive sense. In the interest of producing the most efficient model, these high correlations between features will be considered in future steps.  
+
+Correlation is a strong indication that a feature will contribute to how well the model we develop account's for the target variable's variance. A point that can be made by visualizing how features vary as a function of the target variable.
+```{r}
+#scatterplot of feature with highest correlation to SalePrice
+ggplot(train_df, aes(y=SalePrice, x=OverallQual)) + 
+    geom_point(size=3, color="#69b3a2") +
+    theme_ipsum() +
+    scale_y_log10() +
+    ggtitle( 'SalePrice (log10) ~ Overall Quality' )
+```
+
+
+```{r}
+#find the feature with the minimal absolute value correlation to SalePrice
+numcorrs$correlation <- abs( numcorrs$correlation )
+head( numcorrs[ order( numcorrs$correlation ), ],1 )
+```
+
+```{r,message=FALSE, warning=FALSE, echo=FALSE}
+#scatterplot of BsmtFinSF2, the feature with least correlated to SalePrice
+ggplot(train_df, aes(y=SalePrice, x=BsmtFinSF2)) + 
+    geom_point(size=3, color="#69b3a2") +
+    theme_ipsum() +
+    scale_y_log10() +
+    xlim(1,1500) +
+    ggtitle( 'Basement finished SF Type2 vs SalePrice (log10)' )
+```
+
+The feature `OverallQual` has the highest correlation to `SalePrice` and when plotted as a function of the target variable exhibits a clear positive trend. This is not the case with `BsmtFinSF2` which does not show any clear trend in the data. `BsmtFinSF2` was the least correlated numeric feature in the dataset. In fact, it actually has a slightly lower correlation than `ID` which is a completely arbitrary feature lable.  
+
+Next we will take the top 3 correlated features plotted previously in the heatmap and test the hypotheses that the correlations between pairwise set of variables is 0.
+```{r}
+cor.test( train_df$OverallQual, train_df$GrLivArea, method = 'pearson', conf.level = 0.8 )
+cor.test( train_df$OverallQual, train_df$GarageCars, method = 'pearson', conf.level = 0.8 )
+cor.test( train_df$GarageCars, train_df$GrLivArea, method = 'pearson', conf.level = 0.8 )
+```
+
+The p-values for all three of the correlation test results are very small and well below conventional criteria. Therefor, we can conclude that the features being compared are significantly correlated. This is significant because correlations between features can lead to familywise errors.
+
+
+## Linear Algebra and Correlation:
+Invert your correlation matrix from above. (This is known as the precision matrix and contains variance inflation factors on the diagonal.) Multiply the correlation matrix by the precision matrix, and then multiply the precision matrix by the correlation matrix. Conduct LU decomposition on the matrix.
+
+```{r}
+#precision matix = invert the correlation matrix
+top12_inv <- inv( top12_cor )
+#multiply correlation by precision
+corpre <- top12_cor %*% top12_inv
+print( round( corpre,7 ) )
+#multiply precision by correlation
+precor <- top12_inv %*% top12_cor
+print( round( precor,7 ) )
+```
+```{r}
+lu.decomposition( top12_cor )
+```
+
+
+
+## Calculus-Based Probability & Statistics
+Many times, it makes sense to fit a closed form distribution to data. Select a variable in the Kaggle.com training dataset that is skewed to the right, shift it so that the minimum value is absolutely above zero if necessary. Then load the [MASS package](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/fitdistr.html) and run fitdistr to fit an exponential probability density function. Find the optimal value of $\lambda$ for this distribution, and then take 1000 samples from this exponential distribution using this value (e.g., rexp(1000, )). Plot a histogram and compare it with a histogram of
+your original variable. Using the exponential pdf, find the 5th and 95th percentiles
+using the cumulative distribution function (CDF). Also generate a 95% confidence
+interval from the empirical data, assuming normality. Finally, provide the empirical
+5 th percentile and 95 th percentile of the data. Discuss.
+
+As demonstrated in the first visual exploration of the dataset above, the target variable, `SalePrice` is right skewed:
+```{r}
+summary( train_df$SalePrice )
+```
+The mean of `SalePrice` is greater than the median, indicating skew and the minimum value is well above zero. $\therefore$ this variable is a good candidate for this exercise
+```{r}
+#Find the optimal value of lambda
+optlam <- fitdistr( train_df$SalePrice, "exponential" )
+optrate<- optlam$estimate
+#take 1000 samples from this exponential distribution
+n <- 1000
+optlam_sample <- rexp( n, rate = optrate )
+
+#prep data for visualization
+sp_df <- data.frame( 'SalePrice' = train_df$SalePrice ) %>% mutate( 'origin' = 'data' )
+sim_df <- data.frame( 'SalePrice' = optlam_sample ) %>% mutate( 'origin' = 'simulated' )
+histo_df <- rbind( sp_df, sim_df )
+
+SP_histo <- ggplot( histo_df, aes( x=SalePrice, fill=origin ) ) + 
+  geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity' ) + 
+  scale_fill_manual(values=c("#69b3a2", "#404080")) +
+  theme_ipsum() +
+  labs(fill="") +
+  ggtitle( 'Sale Price' )  
+SP_histo
+```
+
+
+```{r}
+#find the 5th and 95th percentiles of the CDF from the exponential
+cdfs <- ggplot( histo_df, aes( x=SalePrice, color=origin ) ) +
+  stat_ecdf( geom = "step", pad = FALSE ) +
+  ggtitle( 'CDF' )
+cdfs
+```
+```{r}
+cdfs_histo <- layer_data( cdfs )
+cdfs_data <- cdfs_histo %>% filter( group == 1 ) %>% dplyr::select( c( 'x', 'y' ) )
+cdfs_sim <- cdfs_histo %>% filter( group == 2 ) %>% dplyr::select( c( 'x', 'y' ) )
+simp5 <- cdfs_sim$x[ which.min(abs(cdfs_sim$y-0.05)) ]
+simp95 <- cdfs_sim$x[ which.min(abs(cdfs_sim$y-0.95)) ]
+datp025 <- cdfs_data$x[ which.min(abs(cdfs_data$y-0.025)) ]
+datp975 <- cdfs_data$x[ which.min(abs(cdfs_data$y-0.975)) ]
+res <- paste( '90% Confidence interval for simulated data\n5th percentile:', simp5,
+              '\n95th percentile:', simp95, '\n\n95% Confidence interval for emirical data:',
+              '\n2.5th percentile:', datp025, '\n97.5th percentile:', datp975)
+cat( res, sep = '\n' )
+```
+In general, the exponential fit to `SalePrice` does not do a satisfactory job of describing the envelope of the data as shown in the dual plot histogram. Additionally, the simulated data's 90% confidence interval range is much broader than the empirical 95% interval.
+
+
+### Modeling. 
+Build some type of multiple regression model and submit your model to the competition board. Provide your complete model summary and results with analysis. Report your Kaggle.com user name and score.
+
+For the first pass at modeling, we will arbitrarity take the 1st seven numeric features with the highest correlation to the target variable:
+```{r}
+head( numcorrs, 12 )
+```
+
+The 7 will be added to the list with the following criteria: Add feature with highest correlation to `SalePrice`, if the feature shows high cross-correlation with another feature already added to the list then pass and move to evaluate the next. This yields the following list:
+```{r}
+pick7 <- c( 'OverallQual', 'GrLivArea', 'GarageCars', 'TotalBsmtSF', 'FullBath', 'YearBuilt', 'YearRemodAdd' )
+```
+
+Now to further clean the numeric data for these 7 features.  
+
+Visual inspection of some features shows that there are outliers in the data. For example, look at the SalePrice scatter plot for Ground Living Area:
+```{r}
+#scatterplot of feature with SalePrice ~ GrLivArea
+ggplot(train_df, aes(y=SalePrice, x=GrLivArea)) + 
+    geom_point(size=3, color="#69b3a2") +
+    theme_ipsum() +
+    scale_y_log10() +
+    ggtitle( 'SalePrice (log10) ~ Ground Living Area' )
+```
+
+There are some outliers particularly towards the extreme right of the data distribution. We will achieve a better fit for the training data if we remove outliers from the set:
+```{r}
+#remove outliers [Q1- (1.5)IQR] or above [Q3+(1.5)IQR] from the numeric data
+print( dim( train_df ) )
+colselect <- c( c( 'Id', 'SalePrice' ), pick7 )
+train_df_out <- train_df %>% dplyr::select( all_of( colselect ) ) %>%
+  filter( !OverallQual %in% c( outlier( OverallQual ) ),
+          !GrLivArea %in% c( outlier( GrLivArea ) ),
+          !GarageCars %in% c( outlier( GarageCars ) ),
+          !TotalBsmtSF %in% c( outlier( TotalBsmtSF ) ),
+          !FullBath %in% c( outlier( FullBath ) ),
+          !YearBuilt %in% c( outlier( YearBuilt ) ),
+          !YearRemodAdd %in% c( outlier( YearRemodAdd ) ))
+print( dim( train_df_out ) )
+```
+Next, we will evaluate and deal with null values:
+```{r}
+colSums( is.na( train_df_out ) )
+```
+We got lucky! (how rare), there are no null values for these data fields
+
+Now to train a multiple linear regression model just the selected numeric features:
+```{r}
+cleantrain <- train_df_out %>% dplyr::select( -Id )
+cleantrain_lm <- lm( SalePrice ~ ., data = cleantrain )
+summary( cleantrain_lm )
+```
+Visualize model performance:
+```{r}
+modpredict <- cleantrain_lm %>% predict( cleantrain )
+modresdat <- data.frame( 'Empirical' = cleantrain$SalePrice, 'Predicted' = modpredict )
+ggplot( modresdat, aes( y = Empirical, x = Predicted ) ) +
+  geom_point() +
+  geom_line( aes( y = modpredict ) ) +
+  ggtitle( 'Multiple Lin. Reg. fit for key Numeric Features' )
+```
+
+Evaluate the model with some diagnostics
+```{r}
+autoplot( cleantrain_lm ) + theme_minimal()
+```
+A quick glance at the model diagnostics shows that for most of the range of the data the multiple linear regression model does an reasonable job at capturing the variance of the data. However, there are some departures from linearity for more extreme values towards the upper limit (e.g. see deviations in Normal Q-Q plot). The R-squard value for the model is 0.7963. This suggest that with just using the 7 most highly correlated numeric features ( excluding those with high cross-correlations) our model can describe approximately 80% of the variance in the data. Additionally, the model statistics suggest this is a statistically significant relationship.
+
+Now to generate predictions for the test data and format them for submission
+```{r}
+colselect <- c( c( 'Id' ), pick7 )
+test_df_out <- test_df %>% 
+  dplyr::select( all_of( colselect ) ) %>%
+  replace_na( list( TotalBsmtSF = 0, GarageCars = 0) )
+testpredict <- cleantrain_lm %>% predict( test_df_out )
+submission <- data.frame( 'Id' = test_df$Id, 'SalePrice' = testpredict )
+savestr <- '/home/bonzilla/Desktop/MSDS2020/DATA605/submission.csv'
+write.csv( submission, savestr, row.names=FALSE )
+```
+
+Well, as you can see by the ranking below, this did not perform very well on kaggle. There is only room for improvement!
+![](/home/bonzilla/Desktop/MSDS2020/DATA605/sub1.png)
+
+
+Let's improve on our model by incorporating more features including categorical one with one-hot encoding
+
+```{r}
+train_df %>% summarise_all( funs( sum( is.na(.) ) ) ) %>%
+  pivot_longer(cols=tidyr::everything(), names_to= 'feature', values_to= 'na_count' ) %>%
+  filter( na_count > 0 )
+
+```
+
+From reading the documentation, many of the NAs indicate the record does not possess the structure (e.g. property does not have a basement) and for our purposes numeric feattures with 'NA' values can be changed to 0 and categorical features can have a new value to indicate the absence of the feature.
+
+```{r}
+train_df_out <- train_df %>% 
+  replace_na( list( LotFrontage = 0, Alley = 'No Access', MasVnrType = 'No Vnr', 
+                    MasVnrArea = 0, BsmtQual = 'No Bsmt', BsmtCond = 'No Bsmt', 
+                    BsmtExposure = 'No Bsmt', BsmtFinType1 = 'No Bsmt', 
+                    BsmtFinType2 = 'No Bsmt', Electrical = 'No sys', TotalBsmtSF = 0,
+                    FireplaceQu = 'No FP', GarageQual = 'No Garage', GarageType = 'No Garage', 
+                    GarageYrBlt = 'No Garage', GarageFinish = 'No Garage', GarageCars = 0, 
+                    GarageCond = 'No Garage', GarageArea = 0, PoolQC = 'No Pool', 
+                    Fence = 'No Fence', MiscFeature = 'None' ) )
+
+#treat the test data the same
+test_df_out <- test_df %>% 
+  replace_na( list( LotFrontage = 0, Alley = 'No Access', MasVnrType = 'No Vnr', 
+                    MasVnrArea = 0, BsmtQual = 'No Bsmt', BsmtCond = 'No Bsmt', 
+                    BsmtExposure = 'No Bsmt', BsmtFinType1 = 'No Bsmt', 
+                    BsmtFinType2 = 'No Bsmt', Electrical = 'No sys', TotalBsmtSF = 0,
+                    FireplaceQu = 'No FP', GarageQual = 'No Garage', GarageType = 'No Garage', 
+                    GarageYrBlt = 'No Garage', GarageFinish = 'No Garage', GarageCars = 0, 
+                    GarageCond = 'No Garage', GarageArea = 0, PoolQC = 'No Pool', 
+                    Fence = 'No Fence', MiscFeature = 'None' ) )
+```
+
+
+We will now use a very simple [tidymodels recipe](https://www.tmwr.org/recipes.html) to apply to the data.
+
+```{r}
+#simple model recipe for housing dataset
+simple_ames <- 
+  recipe(SalePrice ~ Neighborhood + GrLivArea + YearBuilt + BldgType,
+         data = train_df_out) %>%
+  step_log(GrLivArea, base = 10) %>% 
+  step_dummy(all_nominal())
+
+# now to prep the model
+simple_ames_prepped <- prep(simple_ames )
+
+train_prep <- bake(simple_ames_prepped, new_data = NULL)
+#the next step is the 'bake' the trained recipe
+test_prep <- bake(simple_ames_prepped, new_data = test_df_out)
+
+#fit linear model
+lm_fit <- lm( SalePrice ~ ., data = train_prep )
+summary( lm_fit )
+
+#use model to make predictions on test data
+fullycooked <- predict( lm_fit, test_prep )
+```
+
+```{r}
+submission2 <- data.frame( 'Id' = test_df$Id, 'SalePrice' = fullycooked )
+savestr <- '/home/bonzilla/Desktop/MSDS2020/DATA605/submission2.csv'
+write.csv( submission2, savestr, row.names=FALSE )
+```
+
+Working through this simple demo greatly improved the ranking (although it did not improve the $R^2$ value of the model fit?):
+![](/home/bonzilla/Desktop/MSDS2020/DATA605/sub2.png)
+
+This is a step in the right direction. Let us see if we can improve on the latest attempt by creating a more complex model recipe. Starting with adding several more features. Will add several of the numeric features with high correlations to `SalePrice` (from the first attempt) and a few more categorical features that make intuitive sense.
+
+
+```{r}
+extended_ames <- 
+  recipe(SalePrice ~ Neighborhood + GrLivArea + YearBuilt + BldgType + OverallQual + GarageArea + TotRmsAbvGrd + BedroomAbvGr,
+         data = train_df_out) %>%
+  step_log(GrLivArea, base = 10) %>% 
+  step_dummy(all_nominal())
+
+# now to prep the model
+extended_ames_prepped <- prep(extended_ames )
+
+train_prep <- bake(extended_ames_prepped, new_data = NULL)
+#the next step is the 'bake' the trained recipe
+test_prep <- bake(extended_ames_prepped, new_data = test_df_out)
+
+#fit linear model
+lm_fit <- lm( SalePrice ~ ., data = train_prep )
+summary( lm_fit )
+
+#use model to make predictions on test data
+fullycooked2 <- predict( lm_fit, test_prep )
+```
+
+```{r}
+submission3 <- data.frame( 'Id' = test_df$Id, 'SalePrice' = fullycooked2 )
+savestr <- '/home/bonzilla/Desktop/MSDS2020/DATA605/submission3.csv'
+write.csv( submission3, savestr, row.names=FALSE )
+```
+
+Adding these features led to a modest improvement to both the $R^2$ score of the model fit and the kaggle evaluation of the model predictions:
+![](/home/bonzilla/Desktop/MSDS2020/DATA605/sub3.png)
+
+However, to make real progress towards improving the model's prediction power would require detailed attention to groom individual features as well as implementing more methods to the tidymodel recipe. Perhaps if I find time on another weekend......
+
+
+<br><br><br>

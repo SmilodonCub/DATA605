@@ -1,0 +1,155 @@
+---
+title: 'DATA605 Final Project'
+subtitle: 'Problem 1'
+author: 'Bonnie Cooper'
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    highlight: github
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Computational Mathematics: Probability
+
+Libraries Used:
+```{r, message=FALSE}
+library( dplyr )
+library( janitor )
+```
+
+## Generating Random Numbers
+
+Using 'R', generate a random variable $X$ that has 10,000 random uniform numbers from 1 to $N$, where $N$ can be any number of your choosing greater than or equal to 6. Then generate a random variable $Y$ that has 10,000 random normal numbers with a mean of $\mu = \sigma = (N+1)/2$.
+
+```{r}
+# Define N, the max value
+N <- 13
+
+# each variable will hold n values where:
+n <- 10000
+#generate random uniform variable X, with n values from range 1 to N
+X <- runif( n, min = 1, max = N )
+#generate random normal variable Y, with n values and mean = sigma = (N+1)/2
+Y <- rnorm( n, mean = (N+1)/2, sd = (N+1)/2 )
+
+data_df <- data.frame( cbind( X, Y ) )
+head( data_df )
+```
+
+take a momnt to evaluate the variable:
+```{r}
+paste( 'length X:', length( X ), ' length Y:',length( Y ) )
+print( summary( X ) )
+paste( '(N+1)/2 =', (N+1)/2 ) 
+print( summary( Y ) )
+paste( 'sigma(Y) =', round( sd( Y ), 2 ) )
+```
+
+Both $X$ & $Y$ have the expected dimensions and summary statistics
+
+
+## Probability
+Calculate as a minimum the below probabilities a through c.  Assume the small letter "x" is estimated as the median of the X variable, and the small letter "y" is estimated as the 1st quartile of the Y variable.  Interpret the meaning of all probabilities.
+
+```{r}
+#from the problem it is given that:
+x <- median( X )
+y <- summary( Y )[ 2 ]
+res <- paste( 'The median of X, x =', x, '\nThe 1st quartile of Y, y =', y )
+cat( res )
+```
+
+
+### a) $P(X \gt x | X \gt y)$
+
+$P(X \gt x | X \gt y) = \frac{P(X \gt x \cap X \gt y)}{P(X \gt y)}$
+
+```{r}
+joint <- data_df %>% filter( X > x, Y > y ) 
+jointp <- dim( joint )[ 1 ]/ n
+marg <- data_df %>% filter( X > y )
+margp <- dim( marg )[ 1 ]/ n
+condp <- jointp / margp
+```
+
+The conditional probability, $P(X \gt x | X \gt y) =$ `r condp`
+
+### b) $P(X \gt x, Y \gt y)$
+
+The joint probability, $P(X \gt x, X \gt y) =$ `r jointp`
+
+
+### c) $P(X \lt x | X \gt y )$
+$P(X \lt x | X \lt y) = \frac{P(X \lt x \cap X \lt y)}{P(X \lt y)}$
+
+```{r}
+joint <- data_df %>% filter( X < x, Y < y ) 
+jointp <- dim( joint )[ 1 ]/ n
+marg <- data_df %>% filter( X < y )
+margp <- dim( marg )[ 1 ]/ n
+condp <- jointp / margp
+```
+
+The conditional probability, $P(X \lt x | X \lt y) =$ `r condp`
+
+### Investigate whether $P(X \gt x \mbox{ & } Y \gt y) = P(X \gt x) P(Y \gt y)$ by building a table and evaluating the marginal and joint probabilities.
+
+The following code builds a joint probability table with marginal probabilities:
+```{r}
+getjoints <- data_df %>% mutate( jp1 = ( X <= x & Y <= y),
+                              jp2 = ( X <= x & Y > y ),
+                              jp3 = ( X > x & Y <= y ),
+                              jp4 = ( X > x & Y > y ) )
+jointps <- colSums( getjoints[,3:6] )/n
+jointps <- data.frame( matrix( jointps, ncol=2, byrow=TRUE ) )
+colnames( jointps ) <- c( 'P(Y<=y)', 'P(Y>y)' )
+rownames( jointps ) <- c( 'P(X<=x)', 'P(X>x)' )
+
+jointps <- jointps %>% mutate( 'Total' = rowSums(.[1:2] ) )
+jointps[ 'Total' ,] <- colSums( jointps )
+rownames( jointps ) <- c( 'P(X<=x)', 'P(X>x)', 'Total' )
+jointps
+```
+
+From these values comparisons can be made:  
+$P(X \gt x \mbox{ & } Y \gt y) =$ `r jointps[2,2]`  
+$P(X \gt x) P(Y \gt y) =$ `r jointps[2,3]` $\cdot$ `r jointps[3,2]` = `r jointps[2,3] * jointps[3,2]`
+As a result, we see that the statement $P(X \gt x \mbox{ & } Y \gt y) = P(X \gt x) P(Y \gt y)$ evaluates true for this data; a good indication that the data features are independent.
+
+### Check to see if independence holds by using Fisher’s Exact Test and the Chi Square Test. What is the difference between the two? Which is most appropriate?
+
+```{r}
+getmargins <- data_df %>% mutate( m1 = ( X <= x ),
+                              m2 = ( Y <= y ),
+                              m3 = ( X > x ),
+                              m4 = ( Y > y ) )
+margins <- colSums( getmargins[,3:6] )
+margins <- matrix( margins, 2, 2, dimnames = list( c( 'X', 'Y' ), c( '<=', '>' ) ) )
+margins
+```
+
+```{r}
+#chi-squared test
+test <- chisq.test( margins )
+test
+```
+
+```{r}
+#fisher exact test
+fisher.test( margins )
+```
+
+
+The p-values for both tests are very small `p-value < 2.2e-16`, therefore we can reject the null hypothesis and conclude the the two distributions, $X$ & $Y$, are statistically significantly associated. Both the $\chi ^2$ and Fisher's Exact tests are statistical methods of independence between data features. Fisher's test yields an exact result whereas $\chi ^2$ is approximately accurate. However, because this is a very large sample size and $\chi ^2$ accuracy increases with sample size, $\chi ^2$ is more appropriate for this application.
+
+
+
+
+
+
+<br><br><br>
